@@ -1,51 +1,180 @@
-import { useState } from 'react';
-import reactLogo from './assets/react.svg';
-import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
+import { useEffect } from "react";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 
-import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
-import 'primereact/resources/primereact.min.css'; //core css
-import 'primeicons/primeicons.css'; //icons
-import 'primeflex/primeflex.css'; // flex
-import './App.css';
+import SideBar from "./components/ui/SideBar";
+import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
+import Targets from './pages/Targets'
+import SSLVerifier from "./pages/SSLVerifier";
+import Incidents from "./pages/Incidents";
+import AgentControl from "./pages/AgentControl";
+import AgentDetails from "./pages/AgentDetails";
+import ServiceCenter from "./pages/ServiceCenter";
+import ServiceDetails from "./pages/ServiceDetails";
+import TeamManagement from "./pages/TeamManagement";
+import TenantDashboard from "./pages/TenantDashboard";
+import Profile from "./pages/Profile";
+// import AlertEmails from "./pages/AlertEmails";
+import { AppToastProvider } from "./components/ui/AppToast";
+import { useAppSelector } from "./store/hooks";
+
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
+import "primeflex/primeflex.css";
+
+import "./App.css";
+import AlertEmails from "./pages/AlertEmails";
+
+function ThemeController() {
+  const { mode } = useAppSelector((state) => state.theme);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", mode === "dark");
+    localStorage.setItem("app_theme", mode);
+  }, [mode]);
+
+  return null;
+}
+
+function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="app-shell">
+      <SideBar />
+
+      <main className="app-main">{children}</main>
+    </div>
+  );
+}
+
+function DashboardPage() {
+  return (
+    <AppLayout>
+      <div className="page-header">
+        <div>
+          <p className="page-kicker">Overview</p>
+          <h1>Dashboard</h1>
+          <p>Welcome to your OpsRadar monitoring dashboard.</p>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
+
+function PlaceholderPage({ title }: { title: string }) {
+  return (
+    <AppLayout>
+      <div className="page-header">
+        <div>
+          <p className="page-kicker">OpsRadar</p>
+          <h1>{title}</h1>
+          <p>This page is ready for implementation.</p>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + PrimeReact</h1>
-      <div>
-        <h2>PrimeReact Typescript Issue Template</h2>
-        <p>
-          Please create a test case and attach the link to the to your github
-          issue report.
-        </p>
-      </div>
-      <div className="card">
-        <Button
-          icon="pi pi-plus"
-          className="mr-2"
-          label="Increment"
-          onClick={() => setCount((count) => count + 1)}
-        ></Button>
-        <InputText value={count} />
-        <p>
-          Edit <code>src/App.tsx</code> and save to test PrimeReact
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
+    <BrowserRouter>
+      <ThemeController />
+
+      <AppToastProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          <Route path="/dashboard" element={
+            <AppLayout>
+              <TenantDashboard />
+            </AppLayout>
+          } />
+          <Route path="/targets" element={
+            <AppLayout>
+              <Targets />
+            </AppLayout>
+          } />
+          <Route
+            path="/ssl-verifier"
+            element={
+              <AppLayout>
+                <SSLVerifier />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/incidents"
+            element={
+              <AppLayout>
+                <Incidents />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/agents"
+            element={
+              <AppLayout>
+                <AgentControl />
+              </AppLayout>
+            }
+          />
+
+          <Route
+            path="/agents/:id"
+            element={
+              <AppLayout>
+                <AgentDetails />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/services"
+            element={
+              <AppLayout>
+                <ServiceCenter />
+              </AppLayout>
+            }
+          />
+
+          <Route
+            path="/services/:id"
+            element={
+              <AppLayout>
+                <ServiceDetails />
+              </AppLayout>
+            }
+          />
+          <Route path="/alerts" element={
+            <AppLayout>
+            <AlertEmails />
+          </AppLayout>
+            } />          
+          <Route
+            path="/team"
+            element={<AppLayout>
+            <TeamManagement  />
+          </AppLayout>}
+          />
+          <Route
+            path="/profile"
+            element={
+              <AppLayout>
+                <Profile />
+              </AppLayout>
+            }
+          />
+
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AppToastProvider>
+    </BrowserRouter>
   );
 }
 
