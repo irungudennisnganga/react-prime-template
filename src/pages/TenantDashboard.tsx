@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Chart } from "primereact/chart";
-import { InputSwitch } from "primereact/inputswitch";
 
 import PageLoader from "../components/ui/PageLoader";
 import { useAppToast } from "../components/ui/AppToast";
+import { useAppSelector } from "../store/hooks";
 import {
   AlertEmail,
   alertEmailApi,
@@ -56,6 +56,32 @@ function formatDate(date?: string | null) {
   return parsed.toLocaleString();
 }
 
+function formatLiveTime(date: Date) {
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function formatLiveDate(date: Date) {
+  return date.toLocaleDateString([], {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getGreeting(date: Date) {
+  const hour = date.getHours();
+
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+
+  return "Good evening";
+}
+
 function getInitials(name?: string, email?: string) {
   const source = name || email || "TM";
   const parts = source.split(" ").filter(Boolean);
@@ -79,15 +105,22 @@ function getStoredTheme(): DashboardTheme {
 
 export default function TenantDashboard() {
   const { showToast } = useAppToast();
+  const { user, tenant } = useAppSelector((state) => state.auth);
 
+  console.log("TenantDashboard render", { user, tenant });
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [emails, setEmails] = useState<AlertEmail[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState<DashboardTheme>(() => getStoredTheme());
+  const [now, setNow] = useState(new Date());
 
   const isDark = theme === "dark";
+
+  const displayName = user?.full_name || user?.email || "User";
+  const tenantName = tenant?.name || "Tenant Workspace";
+  const greeting = getGreeting(now);
 
   const applyTheme = (nextTheme: DashboardTheme) => {
     setTheme(nextTheme);
@@ -98,10 +131,6 @@ export default function TenantDashboard() {
     } else {
       document.documentElement.classList.remove("dark");
     }
-  };
-
-  const toggleTheme = (checked: boolean) => {
-    applyTheme(checked ? "dark" : "light");
   };
 
   const loadDashboardData = async () => {
@@ -131,6 +160,12 @@ export default function TenantDashboard() {
   useEffect(() => {
     applyTheme(theme);
     loadDashboardData();
+
+    const timer = window.setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
   }, []);
 
   const stats = useMemo(() => {
@@ -218,7 +253,9 @@ export default function TenantDashboard() {
   }, [monitors, emails, teamMembers]);
 
   const chartTextColor = isDark ? "#cbd5e1" : "#475569";
-  const chartGridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.08)";
+  const chartGridColor = isDark
+    ? "rgba(255,255,255,0.08)"
+    : "rgba(15,23,42,0.08)";
 
   const baseChartOptions = useMemo(() => {
     return {
@@ -333,7 +370,13 @@ export default function TenantDashboard() {
       datasets: [
         {
           data: Object.values(roles),
-          backgroundColor: ["#17b26a", "#3b82f6", "#8b5cf6", "#f97316", "#06b6d4"],
+          backgroundColor: [
+            "#17b26a",
+            "#3b82f6",
+            "#8b5cf6",
+            "#f97316",
+            "#06b6d4",
+          ],
           borderWidth: 0,
         },
       ],
@@ -386,30 +429,73 @@ export default function TenantDashboard() {
 
   return (
     <div className="tenant-dashboard-page">
-      <div className="tenant-dashboard-top">
-        <div>
-          <span className="tenant-dashboard-pill">
-            <i className="pi pi-chart-line" />
-            Tenant Intelligence
-          </span>
+      <section className="tenant-master-hero">
+        <div className="tenant-master-hero-content">
+          <div className="tenant-master-badge">
+            <i className="pi pi-sparkles" />
+            OpsRadar Master View
+          </div>
 
-          <h1>Tenant Dashboard</h1>
+          <h1>
+            {greeting}, {displayName}
+          </h1>
 
           <p>
-            A colorful overview of tenant monitors, alert emails, team access,
-            engagement, and workspace health.
+            Welcome to your master view. OpsRadar brings observability closer to
+            you by giving your team one colorful space to see uptime, alerts,
+            infrastructure health, and tenant activity.
           </p>
+
+          <div className="tenant-master-meta-grid">
+            <div className="tenant-master-meta-card">
+              <span>Current Time</span>
+              <strong>{formatLiveTime(now)}</strong>
+              <small>{formatLiveDate(now)}</small>
+            </div>
+
+            <div className="tenant-master-meta-card workspace">
+              <span>Workspace</span>
+              <strong>{tenantName}</strong>
+              <small>
+                <i className="pi pi-building" />
+                Active tenant environment
+              </small>
+            </div>
+
+           
+          </div>
         </div>
 
-        <div className="tenant-dashboard-actions">
-         
+        <div className="tenant-master-hero-side">
+          <div className="tenant-master-orbit">
+            <div className="orbit-core">
+              <i className="pi pi-eye" />
+              <strong>Observe</strong>
+            </div>
 
-          <button type="button" className="primary-btn" onClick={loadDashboardData}>
-            <i className="pi pi-refresh" />
-            Refresh
-          </button>
+            <span className="orbit-dot dot-one">
+              <i className="pi pi-desktop" />
+            </span>
+
+            <span className="orbit-dot dot-two">
+              <i className="pi pi-bell" />
+            </span>
+
+            <span className="orbit-dot dot-three">
+              <i className="pi pi-users" />
+            </span>
+          </div>
+
+          <div className="tenant-master-side-copy">
+            <h3>Observability, closer than ever.</h3>
+            <p>
+              See what is healthy, what needs attention, and where your
+              infrastructure is moving — all from one control center.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
+
 
       {loading ? (
         <PageLoader message="Loading tenant dashboard..." />
@@ -420,7 +506,7 @@ export default function TenantDashboard() {
               <div className="tenant-health-top">
                 <div>
                   <span>Tenant Health Score</span>
-                  <strong>{stats.tenantHealthScore}%</strong>
+                  {/* <strong>{stats.tenantHealthScore}%</strong> */}
                   <p>
                     Calculated from monitor uptime, email delivery, and active
                     team access.
@@ -464,7 +550,11 @@ export default function TenantDashboard() {
               </div>
 
               <div className="tenant-prime-chart short">
-                <Chart type="line" data={tenantActivityChart} options={baseChartOptions} />
+                <Chart
+                  type="line"
+                  data={tenantActivityChart}
+                  options={baseChartOptions}
+                />
               </div>
             </section>
           </div>
@@ -526,7 +616,11 @@ export default function TenantDashboard() {
               </div>
 
               <div className="tenant-prime-chart">
-                <Chart type="doughnut" data={monitorStatusChart} options={doughnutOptions} />
+                <Chart
+                  type="doughnut"
+                  data={monitorStatusChart}
+                  options={doughnutOptions}
+                />
               </div>
             </section>
 
@@ -539,7 +633,11 @@ export default function TenantDashboard() {
               </div>
 
               <div className="tenant-prime-chart">
-                <Chart type="bar" data={emailEngagementChart} options={baseChartOptions} />
+                <Chart
+                  type="bar"
+                  data={emailEngagementChart}
+                  options={baseChartOptions}
+                />
               </div>
             </section>
 
@@ -552,7 +650,11 @@ export default function TenantDashboard() {
               </div>
 
               <div className="tenant-prime-chart">
-                <Chart type="pie" data={teamRoleChart} options={doughnutOptions} />
+                <Chart
+                  type="pie"
+                  data={teamRoleChart}
+                  options={doughnutOptions}
+                />
               </div>
             </section>
           </div>

@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 
 import PageLoader from "../components/ui/PageLoader";
 import { useAppToast } from "../components/ui/AppToast";
-import { AgentDetails as AgentDetailsType, AgentHeartbeatLog, agentApi } from "../services/api";
+import {
+  AgentDetails as AgentDetailsType,
+  AgentHeartbeatLog,
+  agentApi,
+} from "../services/api";
 
 function normalizeAgentStatus(status?: string) {
   const value = String(status || "pending").toLowerCase();
@@ -30,8 +34,215 @@ function formatDate(date?: string) {
   return new Date(date).toLocaleString();
 }
 
+function formatShortTime(date?: string) {
+  if (!date) return "—";
+
+  return new Date(date).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function percent(value?: number) {
   return `${Number(value || 0).toFixed(2)}%`;
+}
+
+function clampMetric(value?: number) {
+  const numericValue = Number(value || 0);
+
+  if (Number.isNaN(numericValue)) return 0;
+  if (numericValue < 0) return 0;
+  if (numericValue > 100) return 100;
+
+  return numericValue;
+}
+
+type TrendPoint = {
+  value: number;
+  label: string;
+  date: string;
+};
+
+type MetricTrendChartProps = {
+  title: string;
+  icon: string;
+  type: "cpu" | "memory" | "disk";
+  latestValue?: number;
+  data: TrendPoint[];
+};
+
+function MetricTrendChart({
+  title,
+  icon,
+  type,
+  latestValue,
+  data,
+}: MetricTrendChartProps) {
+  const width = 520;
+  const height = 180;
+  const paddingX = 28;
+  const paddingTop = 20;
+  const paddingBottom = 34;
+  const graphWidth = width - paddingX * 2;
+  const graphHeight = height - paddingTop - paddingBottom;
+
+  const points = data.map((item, index) => {
+    const x =
+      data.length === 1
+        ? width / 2
+        : paddingX + (index / (data.length - 1)) * graphWidth;
+
+    const y =
+      paddingTop + graphHeight - (clampMetric(item.value) / 100) * graphHeight;
+
+    return {
+      ...item,
+      x,
+      y,
+    };
+  });
+
+  const path = points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+
+  const areaPath =
+    points.length > 0
+      ? `${path} L ${points[points.length - 1].x} ${
+          height - paddingBottom
+        } L ${points[0].x} ${height - paddingBottom} Z`
+      : "";
+
+  const average =
+    data.length > 0
+      ? data.reduce((sum, item) => sum + clampMetric(item.value), 0) / data.length
+      : 0;
+
+  const highest =
+    data.length > 0
+      ? Math.max(...data.map((item) => clampMetric(item.value)))
+      : 0;
+
+  return (
+    <section className={`agent-trend-card ${type}`}>
+      <div className="agent-trend-card-header">
+        <div>
+          <span className="agent-trend-icon">
+            <i className={icon} />
+          </span>
+
+          <div>
+            <h3>{title}</h3>
+            <p>Heartbeat usage trend</p>
+          </div>
+        </div>
+
+        <strong>{percent(latestValue)}</strong>
+      </div>
+
+      {data.length === 0 ? (
+        <div className="agent-trend-empty">
+          <i className="pi pi-chart-line" />
+          <span>No heartbeat data available yet.</span>
+        </div>
+      ) : (
+        <>
+          <div className="agent-trend-chart-wrap">
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              className="agent-trend-svg"
+              role="img"
+              aria-label={`${title} trend chart`}
+            >
+              <line
+                x1={paddingX}
+                y1={paddingTop}
+                x2={paddingX}
+                y2={height - paddingBottom}
+                className="agent-trend-axis"
+              />
+
+              <line
+                x1={paddingX}
+                y1={height - paddingBottom}
+                x2={width - paddingX}
+                y2={height - paddingBottom}
+                className="agent-trend-axis"
+              />
+
+              {[0, 25, 50, 75, 100].map((tick) => {
+                const y =
+                  paddingTop + graphHeight - (tick / 100) * graphHeight;
+
+                return (
+                  <g key={tick}>
+                    <line
+                      x1={paddingX}
+                      y1={y}
+                      x2={width - paddingX}
+                      y2={y}
+                      className="agent-trend-grid-line"
+                    />
+                    <text
+                      x={paddingX - 8}
+                      y={y + 4}
+                      textAnchor="end"
+                      className="agent-trend-y-label"
+                    >
+                      {tick}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {areaPath && <path d={areaPath} className="agent-trend-area" />}
+
+              {path && <path d={path} className="agent-trend-line" />}
+
+              {points.map((point, index) => (
+                <g key={`${point.date}-${index}`}>
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="4"
+                    className="agent-trend-dot"
+                  />
+
+                  {(index === 0 || index === points.length - 1) && (
+                    <text
+                      x={point.x}
+                      y={height - 10}
+                      textAnchor={index === 0 ? "start" : "end"}
+                      className="agent-trend-x-label"
+                    >
+                      {point.label}
+                    </text>
+                  )}
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          <div className="agent-trend-stats">
+            <div>
+              <span>Average</span>
+              <strong>{percent(average)}</strong>
+            </div>
+
+            <div>
+              <span>Highest</span>
+              <strong>{percent(highest)}</strong>
+            </div>
+
+            <div>
+              <span>Samples</span>
+              <strong>{data.length}</strong>
+            </div>
+          </div>
+        </>
+      )}
+    </section>
+  );
 }
 
 export default function AgentDetails() {
@@ -69,6 +280,43 @@ export default function AgentDetails() {
     loadDetails(1, 10);
   }, [id]);
 
+  const logs = details?.heartbeat_logs || [];
+  const metrics = details?.metrics || {};
+
+  const sortedTrendLogs = useMemo(() => {
+    return [...logs]
+      .filter((log) => log.created_at)
+      .sort(
+        (a, b) =>
+          new Date(a.created_at || "").getTime() -
+          new Date(b.created_at || "").getTime()
+      );
+  }, [logs]);
+
+  const cpuTrendData = useMemo<TrendPoint[]>(() => {
+    return sortedTrendLogs.map((log) => ({
+      value: clampMetric(log.cpu_usage),
+      label: formatShortTime(log.created_at),
+      date: log.created_at || "",
+    }));
+  }, [sortedTrendLogs]);
+
+  const memoryTrendData = useMemo<TrendPoint[]>(() => {
+    return sortedTrendLogs.map((log) => ({
+      value: clampMetric(log.memory_usage),
+      label: formatShortTime(log.created_at),
+      date: log.created_at || "",
+    }));
+  }, [sortedTrendLogs]);
+
+  const diskTrendData = useMemo<TrendPoint[]>(() => {
+    return sortedTrendLogs.map((log) => ({
+      value: clampMetric(log.disk_usage),
+      label: formatShortTime(log.created_at),
+      date: log.created_at || "",
+    }));
+  }, [sortedTrendLogs]);
+
   const cpuBody = (row: AgentHeartbeatLog) => {
     return <span className="agent-metric-pill cpu">{percent(row.cpu_usage)}</span>;
   };
@@ -93,9 +341,6 @@ export default function AgentDetails() {
       </div>
     );
   };
-
-  const logs = details?.heartbeat_logs || [];
-  const metrics = details?.metrics || {};
 
   return (
     <div className="agent-details-page">
@@ -204,6 +449,48 @@ export default function AgentDetails() {
             </div>
           </div>
 
+          <section className="agent-trends-section">
+            <div className="agent-trends-header">
+              <div>
+                <h2>
+                  <i className="pi pi-chart-line" />
+                  Server usage trends
+                </h2>
+                <p>
+                  CPU, memory and disk usage based on the heartbeat records currently loaded.
+                </p>
+              </div>
+
+              <span>{logs.length} samples</span>
+            </div>
+
+            <div className="agent-trend-grid">
+              <MetricTrendChart
+                title="CPU Trend"
+                icon="pi pi-server"
+                type="cpu"
+                latestValue={metrics.cpu_usage}
+                data={cpuTrendData}
+              />
+
+              <MetricTrendChart
+                title="Memory Trend"
+                icon="pi pi-database"
+                type="memory"
+                latestValue={metrics.memory_usage}
+                data={memoryTrendData}
+              />
+
+              <MetricTrendChart
+                title="Disk Trend"
+                icon="pi pi-box"
+                type="disk"
+                latestValue={metrics.disk_usage}
+                data={diskTrendData}
+              />
+            </div>
+          </section>
+
           <section className="agent-heartbeat-snapshot">
             <h2>
               <i className="pi pi-clock" />
@@ -243,9 +530,7 @@ export default function AgentDetails() {
                 <p>Historical heartbeat entries captured for this agent.</p>
               </div>
 
-              <span>
-                Total records: {details.pagination?.total || logs.length}
-              </span>
+              <span>Total records: {details.pagination?.total || logs.length}</span>
             </div>
 
             <DataTable
@@ -256,7 +541,8 @@ export default function AgentDetails() {
               totalRecords={details.pagination?.total || logs.length}
               lazy
               onPage={(event) => {
-                const nextPage = Math.floor((event.first || 0) / (event.rows || 10)) + 1;
+                const nextPage =
+                  Math.floor((event.first || 0) / (event.rows || 10)) + 1;
                 const nextPageSize = event.rows || 10;
                 loadDetails(nextPage, nextPageSize);
               }}

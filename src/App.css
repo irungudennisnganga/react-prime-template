@@ -3643,6 +3643,294 @@ html.dark .agent-search {
   word-break: break-word;
 }
 
+/* Agent metric trend graphs */
+
+.agent-trends-section {
+  margin: 1rem 0;
+  background: var(--app-card);
+  border: 1px solid var(--app-border);
+  border-radius: 26px;
+  padding: 1rem;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+}
+
+.agent-trends-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.agent-trends-header h2 {
+  margin: 0;
+  color: var(--app-text);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.15rem;
+}
+
+.agent-trends-header h2 i {
+  color: #06b6d4;
+}
+
+.agent-trends-header p {
+  margin: 0.35rem 0 0;
+  color: var(--app-muted);
+  font-size: 0.88rem;
+}
+
+.agent-trends-header > span {
+  min-height: 30px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  background: rgba(6, 182, 212, 0.12);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.28);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.agent-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.agent-trend-card {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--app-border);
+  background:
+    radial-gradient(circle at top right, rgba(6, 182, 212, 0.08), transparent 34%),
+    var(--app-bg);
+  padding: 1rem;
+}
+
+.agent-trend-card.cpu {
+  background:
+    radial-gradient(circle at top right, rgba(6, 182, 212, 0.12), transparent 34%),
+    var(--app-bg);
+}
+
+.agent-trend-card.memory {
+  background:
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.12), transparent 34%),
+    var(--app-bg);
+}
+
+.agent-trend-card.disk {
+  background:
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 34%),
+    var(--app-bg);
+}
+
+.agent-trend-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.agent-trend-card-header > div {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.agent-trend-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: rgba(6, 182, 212, 0.12);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+.agent-trend-card.memory .agent-trend-icon {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
+  border-color: rgba(168, 85, 247, 0.25);
+}
+
+.agent-trend-card.disk .agent-trend-icon {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.agent-trend-card-header h3 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 0.95rem;
+}
+
+.agent-trend-card-header p {
+  margin: 0.2rem 0 0;
+  color: var(--app-muted);
+  font-size: 0.78rem;
+}
+
+.agent-trend-card-header > strong {
+  color: var(--app-text);
+  font-size: 1.2rem;
+  white-space: nowrap;
+}
+
+.agent-trend-chart-wrap {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--app-border);
+  background: rgba(2, 8, 23, 0.18);
+}
+
+html.dark .agent-trend-chart-wrap {
+  background: rgba(2, 8, 23, 0.5);
+}
+
+.agent-trend-svg {
+  width: 100%;
+  height: 190px;
+  display: block;
+}
+
+.agent-trend-axis {
+  stroke: rgba(148, 163, 184, 0.42);
+  stroke-width: 1;
+}
+
+.agent-trend-grid-line {
+  stroke: rgba(148, 163, 184, 0.14);
+  stroke-width: 1;
+}
+
+.agent-trend-y-label,
+.agent-trend-x-label {
+  fill: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.agent-trend-line {
+  fill: none;
+  stroke: #06b6d4;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.agent-trend-area {
+  fill: rgba(6, 182, 212, 0.12);
+}
+
+.agent-trend-dot {
+  fill: #06b6d4;
+  stroke: var(--app-card);
+  stroke-width: 2;
+}
+
+.agent-trend-card.memory .agent-trend-line {
+  stroke: #a855f7;
+}
+
+.agent-trend-card.memory .agent-trend-area {
+  fill: rgba(168, 85, 247, 0.12);
+}
+
+.agent-trend-card.memory .agent-trend-dot {
+  fill: #a855f7;
+}
+
+.agent-trend-card.disk .agent-trend-line {
+  stroke: #f59e0b;
+}
+
+.agent-trend-card.disk .agent-trend-area {
+  fill: rgba(245, 158, 11, 0.12);
+}
+
+.agent-trend-card.disk .agent-trend-dot {
+  fill: #f59e0b;
+}
+
+.agent-trend-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.agent-trend-stats div {
+  border: 1px solid var(--app-border);
+  background: var(--app-card);
+  border-radius: 14px;
+  padding: 0.65rem;
+}
+
+.agent-trend-stats span {
+  display: block;
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.agent-trend-stats strong {
+  display: block;
+  color: var(--app-text);
+  margin-top: 0.2rem;
+  font-size: 0.9rem;
+}
+
+.agent-trend-empty {
+  min-height: 190px;
+  border: 1px dashed var(--app-border);
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  gap: 0.45rem;
+  color: var(--app-muted);
+  text-align: center;
+}
+
+.agent-trend-empty i {
+  font-size: 1.5rem;
+  color: #94a3b8;
+}
+
+/* Responsive trend graphs */
+
+@media (max-width: 1200px) {
+  .agent-trend-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-trend-svg {
+    height: 220px;
+  }
+}
+
+@media (max-width: 640px) {
+  .agent-trends-header {
+    flex-direction: column;
+  }
+
+  .agent-trend-card-header {
+    flex-direction: column;
+  }
+
+  .agent-trend-stats {
+    grid-template-columns: 1fr;
+  }
+}
 .primary-btn.full {
   width: 100%;
 }
@@ -6307,5 +6595,420 @@ html.dark .service-search {
   .tenant-status-pill {
     grid-column: 1 / -1;
     width: fit-content;
+  }
+}
+
+.history-range-floating-filter {
+  position: fixed;
+  right: 5.5rem;
+  top: 5.5rem;
+  z-index: 1201;
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.8rem;
+  border-radius: 18px;
+  background: var(--app-card);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.18);
+}
+
+.history-range-floating-filter span {
+  display: block;
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.history-range-floating-filter strong {
+  display: block;
+  color: var(--app-text);
+  font-size: 0.9rem;
+  max-width: 145px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-range-floating-filter select {
+  height: 38px;
+  min-width: 120px;
+  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  background: var(--app-bg);
+  color: var(--app-text);
+  padding: 0 0.7rem;
+  font-weight: 800;
+  outline: none;
+}
+
+.history-range-floating-filter select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .history-range-floating-filter {
+    left: 1rem;
+    right: 1rem;
+    top: auto;
+    bottom: 1rem;
+    min-width: 0;
+  }
+
+  .history-range-floating-filter strong {
+    max-width: 160px;
+  }
+}
+
+@media (max-width: 520px) {
+  .history-range-floating-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-range-floating-filter strong {
+    max-width: 100%;
+  }
+
+  .history-range-floating-filter select {
+    width: 100%;
+  }
+}
+/* Redesigned Master View Hero */
+.tenant-master-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.75fr);
+  gap: 1.2rem;
+  margin-bottom: 1.1rem;
+  padding: 1.35rem;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(132deg, transparent 0 45%, rgba(255, 255, 255, 0.08) 45% 46%, transparent 46%),
+    linear-gradient(48deg, transparent 0 48%, rgba(255, 255, 255, 0.06) 48% 49%, transparent 49%),
+    linear-gradient(120deg, transparent 0 35%, rgba(245, 158, 11, 0.3) 35% 52%, transparent 52%),
+    linear-gradient(60deg, transparent 0 48%, rgba(217, 119, 6, 0.28) 48% 64%, transparent 64%),
+    linear-gradient(155deg, transparent 0 58%, rgba(124, 58, 237, 0.22) 58% 73%, transparent 73%),
+    linear-gradient(135deg, #18181b 0%, #27272a 40%, #451a03 72%, #111827 100%);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+.tenant-master-hero::before {
+  content: "";
+  position: absolute;
+  inset: -80px auto auto 48%;
+  width: 320px;
+  height: 320px;
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.14);
+  filter: blur(8px);
+}
+
+.tenant-master-hero-content,
+.tenant-master-hero-side {
+  position: relative;
+  z-index: 2;
+}
+
+.tenant-master-badge {
+  width: fit-content;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  color: #bbf7d0;
+  background: rgba(23, 178, 106, 0.14);
+  border: 1px solid rgba(187, 247, 208, 0.22);
+  font-size: 0.8rem;
+  font-weight: 900;
+  margin-bottom: 0.85rem;
+}
+
+.tenant-master-hero h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 3.15rem);
+  line-height: 1.06;
+  letter-spacing: -0.05em;
+}
+
+.tenant-master-hero p {
+  margin: 0.85rem 0 0;
+  color: #cbd5e1;
+  max-width: 820px;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.tenant-master-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1.2rem;
+}
+
+.tenant-master-meta-card {
+  min-height: 112px;
+  border-radius: 22px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(12px);
+}
+
+.tenant-master-meta-card span {
+  display: block;
+  color: #93c5fd;
+  font-size: 0.78rem;
+  font-weight: 900;
+  margin-bottom: 0.45rem;
+}
+
+.tenant-master-meta-card strong {
+  display: block;
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.tenant-master-meta-card small {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #cbd5e1;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.tenant-master-meta-card.workspace {
+  background:
+    linear-gradient(135deg, rgba(23, 178, 106, 0.16), rgba(59, 130, 246, 0.1)),
+    rgba(255, 255, 255, 0.08);
+}
+
+.tenant-master-hero-side {
+  border-radius: 26px;
+  padding: 1.1rem;
+  min-height: 100%;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.1rem;
+}
+
+.tenant-master-orbit {
+  min-height: 210px;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.tenant-master-orbit::before {
+  content: "";
+  width: 190px;
+  height: 190px;
+  border-radius: 999px;
+  border: 1px dashed rgba(255, 255, 255, 0.26);
+  position: absolute;
+}
+
+.orbit-core {
+  width: 118px;
+  height: 118px;
+  border-radius: 36px;
+  display: grid;
+  place-items: center;
+  gap: 0.35rem;
+  background:
+    radial-gradient(circle at top, rgba(103, 232, 249, 0.22), transparent 50%),
+    rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
+}
+
+.orbit-core i {
+  color: #67e8f9;
+  font-size: 1.8rem;
+}
+
+.orbit-core strong {
+  font-size: 0.9rem;
+}
+
+.orbit-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.orbit-dot.dot-one {
+  top: 20px;
+  right: 62px;
+  background: rgba(59, 130, 246, 0.7);
+}
+
+.orbit-dot.dot-two {
+  bottom: 28px;
+  right: 38px;
+  background: rgba(249, 115, 22, 0.75);
+}
+
+.orbit-dot.dot-three {
+  left: 34px;
+  bottom: 58px;
+  background: rgba(23, 178, 106, 0.78);
+}
+
+.tenant-master-side-copy h3 {
+  margin: 0 0 0.45rem;
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.tenant-master-side-copy p {
+  margin: 0;
+  color: #dbeafe;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.tenant-dashboard-top.redesigned {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(23, 178, 106, 0.1), transparent 28%),
+    var(--app-card);
+  border: 1px solid var(--app-border);
+}
+
+/* Make existing dashboard sections feel more colorful */
+
+.tenant-health-card {
+  background:
+    radial-gradient(circle at top right, rgba(23, 178, 106, 0.18), transparent 32%),
+    radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.1), transparent 28%),
+    var(--app-card);
+}
+
+.tenant-chart-card {
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 30%),
+    var(--app-card);
+}
+
+.tenant-list-card {
+  background:
+    radial-gradient(circle at top left, rgba(168, 85, 247, 0.08), transparent 28%),
+    var(--app-card);
+}
+
+.tenant-summary-card.monitors {
+  background:
+    radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.16), transparent 34%),
+    var(--app-card);
+}
+
+.tenant-summary-card.online {
+  background:
+    radial-gradient(circle at bottom left, rgba(23, 178, 106, 0.16), transparent 34%),
+    var(--app-card);
+}
+
+.tenant-summary-card.alerts {
+  background:
+    radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.16), transparent 34%),
+    var(--app-card);
+}
+
+.tenant-summary-card.opened {
+  background:
+    radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.16), transparent 34%),
+    var(--app-card);
+}
+
+.tenant-summary-card.team {
+  background:
+    radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.16), transparent 34%),
+    var(--app-card);
+}
+
+/* Responsive */
+
+@media (max-width: 1100px) {
+  .tenant-master-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .tenant-master-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tenant-master-hero-side {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .tenant-master-hero {
+    padding: 1rem;
+    border-radius: 24px;
+  }
+
+  .tenant-master-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tenant-master-orbit {
+    min-height: 180px;
+  }
+
+  .tenant-master-orbit::before {
+    width: 150px;
+    height: 150px;
+  }
+
+  .orbit-core {
+    width: 100px;
+    height: 100px;
+    border-radius: 30px;
+  }
+
+  .orbit-dot {
+    width: 42px;
+    height: 42px;
+    border-radius: 15px;
+  }
+
+  .orbit-dot.dot-one {
+    top: 12px;
+    right: 44px;
+  }
+
+  .orbit-dot.dot-two {
+    bottom: 22px;
+    right: 30px;
+  }
+
+  .orbit-dot.dot-three {
+    left: 26px;
+    bottom: 48px;
   }
 }

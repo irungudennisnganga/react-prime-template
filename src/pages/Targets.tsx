@@ -16,6 +16,40 @@ import {
   monitorApi,
 } from "../services/api";
 
+type HistoryRange = "hour" | "day" | "week" | "month";
+
+const HISTORY_RANGE_OPTIONS: Array<{
+  label: string;
+  value: HistoryRange;
+  apiRange: string;
+  limit: number;
+}> = [
+  {
+    label: "Last Hour",
+    value: "hour",
+    apiRange: "1h",
+    limit: 1000,
+  },
+  {
+    label: "Today",
+    value: "day",
+    apiRange: "1d",
+    limit: 3000,
+  },
+  {
+    label: "This Week",
+    value: "week",
+    apiRange: "7d",
+    limit: 10000,
+  },
+  {
+    label: "This Month",
+    value: "month",
+    apiRange: "1m",
+    limit: 30000,
+  },
+];
+
 function normalizeStatus(status?: string) {
   const value = String(status || "pending").toLowerCase();
 
@@ -36,6 +70,17 @@ function getStatusClass(status?: string) {
   return "status-badge pending";
 }
 
+function getHistorySortDate(item: MonitorHistoryItem) {
+  const value =
+    (item as any).created_at ||
+    (item as any).checked_at ||
+    (item as any).timestamp ||
+    (item as any).time ||
+    0;
+
+  return new Date(value).getTime();
+}
+
 export default function Targets() {
   const { showToast } = useAppToast();
 
@@ -53,6 +98,7 @@ export default function Targets() {
   const [historyVisible, setHistoryVisible] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [history, setHistory] = useState<MonitorHistoryItem[]>([]);
+  const [historyRange, setHistoryRange] = useState<HistoryRange>("month");
 
   const [globalFilter, setGlobalFilter] = useState("");
 
@@ -236,15 +282,30 @@ export default function Targets() {
     }
   };
 
-  const handleViewHistory = async (monitor: Monitor) => {
+  const loadMonitorHistory = async (
+    monitor: Monitor,
+    range: HistoryRange = historyRange
+  ) => {
+    const selectedRange =
+      HISTORY_RANGE_OPTIONS.find((item) => item.value === range) ||
+      HISTORY_RANGE_OPTIONS[3];
+
     try {
       setSelectedMonitor(monitor);
-      setHistoryVisible(true);
       setHistoryLoading(true);
       setHistory([]);
 
-      const data = await monitorApi.history(monitor, "10m", 500);
-      setHistory(data);
+      const data = await monitorApi.history(
+        monitor,
+        selectedRange.apiRange,
+        selectedRange.limit
+      );
+
+      const sortedData = [...data].sort((a, b) => {
+        return getHistorySortDate(b) - getHistorySortDate(a);
+      });
+
+      setHistory(sortedData);
     } catch (error: any) {
       showToast(
         "error",
@@ -254,6 +315,22 @@ export default function Targets() {
     } finally {
       setHistoryLoading(false);
     }
+  };
+
+  const handleViewHistory = async (monitor: Monitor) => {
+    setSelectedMonitor(monitor);
+    setHistoryVisible(true);
+    setHistoryRange("month");
+
+    await loadMonitorHistory(monitor, "month");
+  };
+
+  const handleHistoryRangeChange = async (value: HistoryRange) => {
+    setHistoryRange(value);
+
+    if (!selectedMonitor) return;
+
+    await loadMonitorHistory(selectedMonitor, value);
   };
 
   const handleGlobalFilterChange = (value: string) => {
@@ -339,9 +416,7 @@ export default function Targets() {
 
   return (
     <div className="targets-page">
-      <div className="page-header monitor-page-header">
-       
-      </div>
+      <div className="page-header monitor-page-header" />
 
       <div className="monitor-summary-grid">
         <div className="monitor-summary-card total">
@@ -566,12 +641,38 @@ export default function Targets() {
         onSubmit={handleSubmitMonitor}
       />
 
+      {historyVisible && selectedMonitor && (
+        <div className="history-range-floating-filter">
+          <div>
+            <span>History Range</span>
+            <strong>{selectedMonitor.name}</strong>
+          </div>
+
+          <select
+            value={historyRange}
+            disabled={historyLoading}
+            onChange={(event) =>
+              handleHistoryRangeChange(event.target.value as HistoryRange)
+            }
+          >
+            {HISTORY_RANGE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <MonitorHistoryModal
         visible={historyVisible}
         monitor={selectedMonitor}
         history={history}
         loading={historyLoading}
-        onHide={() => setHistoryVisible(false)}
+        onHide={() => {
+          setHistoryVisible(false);
+          setHistory([]);
+        }}
       />
     </div>
   );
