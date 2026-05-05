@@ -21,6 +21,7 @@ import TenantDashboard from "./pages/TenantDashboard";
 import Profile from "./pages/Profile";
 import AgentReleasesPage from "./pages/AgentRelease/AgentReleasesPage";
 import TenantsPage from "./pages/AdminTenantMng/TenantsPage";
+import SuperAdminDashboard from "./pages/superAdmin/SuperAdminDashboard";
 // import AlertEmails from "./pages/AlertEmails";
 import { AppToastProvider } from "./components/ui/AppToast";
 import { useAppSelector } from "./store/hooks";
@@ -186,6 +187,15 @@ function App() {
             element={
               <AppLayout>
                 <TenantsPage />
+              </AppLayout>
+            }
+          />
+
+          <Route
+            path="/super-admin-dashboard"
+            element={
+              <AppLayout>
+                <SuperAdminDashboard />
               </AppLayout>
             }
           />

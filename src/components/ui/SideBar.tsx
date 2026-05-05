@@ -33,6 +33,7 @@ const MENUS: Record<string, MenuSection[]> = {
     {
       section: "Reports",
       items: [
+        { label: "Super Admin Dashboard", icon: "pi pi-th-large", path: "/super-admin-dashboard" },
         { label: "Agent Releases", icon: "pi pi-chart-bar", path: "/agent-releases" },
         { label: "System Users", icon: "pi pi-file", path: "/system-users" },
         // { label: "Settings", icon: "pi pi-cog", path: "/settings" },
