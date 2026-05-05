@@ -230,7 +230,7 @@ export default function Incidents() {
   };
 
   const messageBody = (row: IncidentLog) => {
-    return row.message || row.error || "No message";
+    return row.message || "No message";
   };
 
   const responseBody = (row: IncidentLog) => {

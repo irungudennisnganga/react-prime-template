@@ -38,7 +38,10 @@ export type CreateAgentReleasePayload = {
   checksum?: string;
 };
 
-export type AgentService = {
+/**
+ * Renamed from AgentService to avoid conflict with agentService.api.ts
+ */
+export type AgentReleaseService = {
   id: string;
   _id?: string;
 
@@ -59,7 +62,10 @@ export type AgentService = {
   updated_at?: string;
 };
 
-export type AgentServiceLog = {
+/**
+ * Renamed from AgentServiceLog to avoid conflict with agentService.api.ts
+ */
+export type AgentReleaseServiceLog = {
   id?: string;
   level?: string;
   message?: string;
@@ -81,13 +87,6 @@ const normalizeRelease = (release: any): AgentRelease => {
       typeof release.is_active === "boolean"
         ? release.is_active
         : release.status === "active",
-  };
-};
-
-const normalizeService = (service: any): AgentService => {
-  return {
-    ...service,
-    id: service.id || service._id,
   };
 };
 
@@ -129,53 +128,5 @@ export const agentReleasesApi = {
       ...response.data,
       data: normalizeRelease(response.data.data),
     };
-  },
-};
-
-export const agentServicesApi = {
-  details: async (id: string): Promise<ApiResponse<AgentService>> => {
-    const response = await apiClient.get<ApiResponse<AgentService>>(
-      `/agent-services/details?id=${id}`
-    );
-
-    return {
-      ...response.data,
-      data: normalizeService(response.data.data),
-    };
-  },
-
-  logs: async (id: string): Promise<ApiResponse<AgentServiceLog[]>> => {
-    const response = await apiClient.get<ApiResponse<AgentServiceLog[]>>(
-      `/agent-services/logs?id=${id}`
-    );
-
-    return response.data;
-  },
-
-  restart: async (id: string): Promise<ApiResponse<any>> => {
-    const response = await apiClient.post<ApiResponse<any>>(
-      "/agent-services/restart",
-      { id }
-    );
-
-    return response.data;
-  },
-
-  disable: async (id: string): Promise<ApiResponse<any>> => {
-    const response = await apiClient.post<ApiResponse<any>>(
-      "/agent-services/disable",
-      { id }
-    );
-
-    return response.data;
-  },
-
-  enable: async (id: string): Promise<ApiResponse<any>> => {
-    const response = await apiClient.post<ApiResponse<any>>(
-      "/agent-services/enable",
-      { id }
-    );
-
-    return response.data;
   },
 };
