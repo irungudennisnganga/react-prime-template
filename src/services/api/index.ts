@@ -7,3 +7,5 @@ export * from "./agent.api";
 export * from "./agentService.api";
 export * from "./alert.api";
 export * from "./team.api";
+export * from "./agentRelease.api";
+export * from "./allTenants.api";

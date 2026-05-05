@@ -19,6 +19,8 @@ import ServiceDetails from "./pages/ServiceDetails";
 import TeamManagement from "./pages/TeamManagement";
 import TenantDashboard from "./pages/TenantDashboard";
 import Profile from "./pages/Profile";
+import AgentReleasesPage from "./pages/AgentRelease/AgentReleasesPage";
+import TenantsPage from "./pages/AdminTenantMng/TenantsPage";
 // import AlertEmails from "./pages/AlertEmails";
 import { AppToastProvider } from "./components/ui/AppToast";
 import { useAppSelector } from "./store/hooks";
@@ -166,6 +168,24 @@ function App() {
             element={
               <AppLayout>
                 <Profile />
+              </AppLayout>
+            }
+          />
+
+          <Route
+            path="/agent-releases"
+            element={
+              <AppLayout>
+                <AgentReleasesPage />
+              </AppLayout>
+            }
+          />
+
+          <Route
+            path="/system-users"
+            element={
+              <AppLayout>
+                <TenantsPage />
               </AppLayout>
             }
           />
