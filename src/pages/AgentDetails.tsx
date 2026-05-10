@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import axios from 'axios'
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
-
+import "./AgentDetails.css";
 import PageLoader from "../components/ui/PageLoader";
 import { useAppToast } from "../components/ui/AppToast";
 import {
   AgentDetails as AgentDetailsType,
   AgentHeartbeatLog,
+  AgentLogFileReport,
+  AgentDirectoryUsage,
   agentApi,
 } from "../services/api";
 
@@ -31,7 +34,9 @@ function getAgentStatusClass(status?: string) {
 
 function formatDate(date?: string) {
   if (!date) return "—";
-  return new Date(date).toLocaleString();
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString();
 }
 
 function formatShortTime(date?: string) {
@@ -57,6 +62,30 @@ function clampMetric(value?: number) {
   return numericValue;
 }
 
+function getUsageClass(value?: number) {
+  const numeric = Number(value || 0);
+
+  if (numeric >= 90) return "danger";
+  if (numeric >= 75) return "warning";
+  return "good";
+}
+
+function formatBytes(bytes?: number) {
+  const value = Number(bytes || 0);
+
+  if (!value || value <= 0) return "0 B";
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const index = Math.min(
+    Math.floor(Math.log(value) / Math.log(1024)),
+    units.length - 1
+  );
+
+  const converted = value / Math.pow(1024, index);
+
+  return `${converted.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
+}
+
 type TrendPoint = {
   value: number;
   label: string;
@@ -78,11 +107,11 @@ function MetricTrendChart({
   latestValue,
   data,
 }: MetricTrendChartProps) {
-  const width = 520;
-  const height = 180;
-  const paddingX = 28;
-  const paddingTop = 20;
-  const paddingBottom = 34;
+  const width = 620;
+  const height = 210;
+  const paddingX = 34;
+  const paddingTop = 22;
+  const paddingBottom = 38;
   const graphWidth = width - paddingX * 2;
   const graphHeight = height - paddingTop - paddingBottom;
 
@@ -115,12 +144,18 @@ function MetricTrendChart({
 
   const average =
     data.length > 0
-      ? data.reduce((sum, item) => sum + clampMetric(item.value), 0) / data.length
+      ? data.reduce((sum, item) => sum + clampMetric(item.value), 0) /
+        data.length
       : 0;
 
   const highest =
     data.length > 0
       ? Math.max(...data.map((item) => clampMetric(item.value)))
+      : 0;
+
+  const lowest =
+    data.length > 0
+      ? Math.min(...data.map((item) => clampMetric(item.value)))
       : 0;
 
   return (
@@ -133,7 +168,7 @@ function MetricTrendChart({
 
           <div>
             <h3>{title}</h3>
-            <p>Heartbeat usage trend</p>
+            <p>Trend based on all loaded heartbeat records</p>
           </div>
         </div>
 
@@ -196,7 +231,6 @@ function MetricTrendChart({
               })}
 
               {areaPath && <path d={areaPath} className="agent-trend-area" />}
-
               {path && <path d={path} className="agent-trend-line" />}
 
               {points.map((point, index) => (
@@ -208,11 +242,19 @@ function MetricTrendChart({
                     className="agent-trend-dot"
                   />
 
-                  {(index === 0 || index === points.length - 1) && (
+                  {(index === 0 ||
+                    index === points.length - 1 ||
+                    index === Math.floor(points.length / 2)) && (
                     <text
                       x={point.x}
                       y={height - 10}
-                      textAnchor={index === 0 ? "start" : "end"}
+                      textAnchor={
+                        index === 0
+                          ? "start"
+                          : index === points.length - 1
+                            ? "end"
+                            : "middle"
+                      }
                       className="agent-trend-x-label"
                     >
                       {point.label}
@@ -235,9 +277,11 @@ function MetricTrendChart({
             </div>
 
             <div>
-              <span>Samples</span>
-              <strong>{data.length}</strong>
+              <span>Lowest</span>
+              <strong>{percent(lowest)}</strong>
             </div>
+
+            
           </div>
         </>
       )}
@@ -261,7 +305,7 @@ export default function AgentDetails() {
     try {
       setLoading(true);
 
-      const data = await agentApi.details(id, nextPage, nextPageSize);
+      const data = await agentApi.details(id, nextPage, nextPageSize, 1000);
       setDetails(data);
       setPage(nextPage);
       setPageSize(nextPageSize);
@@ -281,17 +325,29 @@ export default function AgentDetails() {
   }, [id]);
 
   const logs = details?.heartbeat_logs || [];
+  const trendLogs =
+    details?.heartbeat_trend_logs && details.heartbeat_trend_logs.length > 0
+      ? details.heartbeat_trend_logs
+      : logs;
+
   const metrics = details?.metrics || {};
+  const diskLatest = details?.disk_maintenance_latest;
+  const storageSummary = details?.storage_summary || {};
+  const topDirectories = details?.top_directories || [];
+  const logFiles = details?.log_files || [];
+  const diskReports = details?.disk_maintenance_reports || [];
+
+  const isPending = normalizeAgentStatus(details?.status) === "pending";
 
   const sortedTrendLogs = useMemo(() => {
-    return [...logs]
+    return [...trendLogs]
       .filter((log) => log.created_at)
       .sort(
         (a, b) =>
           new Date(a.created_at || "").getTime() -
           new Date(b.created_at || "").getTime()
       );
-  }, [logs]);
+  }, [trendLogs]);
 
   const cpuTrendData = useMemo<TrendPoint[]>(() => {
     return sortedTrendLogs.map((log) => ({
@@ -342,6 +398,41 @@ export default function AgentDetails() {
     );
   };
 
+  const directorySizeBody = (row: AgentDirectoryUsage) => {
+    return <span className="agent-metric-pill disk">{formatBytes(row.size_bytes)}</span>;
+  };
+
+  const logFileSizeBody = (row: AgentLogFileReport) => {
+    return <span className="agent-metric-pill disk">{formatBytes(row.size_bytes)}</span>;
+  };
+
+  const logModifiedBody = (row: AgentLogFileReport) => {
+    return (
+      <div className="agent-date-cell">
+        <strong>{formatDate(row.modified_at)}</strong>
+        <span>last modified</span>
+      </div>
+    );
+  };
+
+  const candidateBody = (row: AgentLogFileReport) => {
+    return (
+      <span className={`agent-inline-badge ${row.is_candidate ? "warning" : "neutral"}`}>
+        {row.is_candidate ? "Candidate" : "Normal"}
+      </span>
+    );
+  };
+
+  const truncatedBody = (row: AgentLogFileReport) => {
+    return (
+      <span className={`agent-inline-badge ${row.truncated ? "success" : "neutral"}`}>
+        {row.truncated ? "Truncated" : "No"}
+      </span>
+    );
+  };
+
+  const diskUsage = Number(metrics.disk_usage || 0);
+
   return (
     <div className="agent-details-page">
       <div className="agent-details-top">
@@ -356,7 +447,10 @@ export default function AgentDetails() {
           </button>
 
           <h1>Agent details</h1>
-          <p>View server identity, heartbeat status, latest usage and heartbeat logs.</p>
+          <p>
+            View identity, heartbeat metrics, full usage trends, storage overview,
+            top directories, log files and disk maintenance history.
+          </p>
         </div>
 
         <button
@@ -378,8 +472,49 @@ export default function AgentDetails() {
         </div>
       ) : (
         <>
+          {isPending ? (
+            <section className="agent-pending-setup-card">
+              <div>
+                <span className="agent-pending-icon">
+                  <i className="pi pi-info-circle" />
+                </span>
+
+                <div>
+                  <h2>Agent created, waiting for installation</h2>
+                  <p>
+                    This agent has been created but has not sent its first heartbeat yet.
+                    Install and start the agent on the target server to begin collecting CPU,
+                    memory, disk, services, backups and system health data.
+                  </p>
+                </div>
+              </div>
+
+              <div className="agent-pending-grid">
+                <article>
+                  <span>Agent Name</span>
+                  <strong>{details.name || "—"}</strong>
+                </article>
+
+                <article>
+                  <span>Site</span>
+                  <strong>{details.site || "—"}</strong>
+                </article>
+
+                <article>
+                  <span>Status</span>
+                  <strong>{normalizeAgentStatus(details.status)}</strong>
+                </article>
+
+                <article>
+                  <span>Last Seen</span>
+                  <strong>{formatDate(details.last_seen_at)}</strong>
+                </article>
+              </div>
+            </section>
+          ) : null}
+
           <div className="agent-details-hero-grid">
-            <section className="agent-identity-card">
+            <section className="agent-identity-card bright">
               <div className="agent-identity-header">
                 <h2>{details.name}</h2>
                 <span className={getAgentStatusClass(details.status)}>
@@ -390,7 +525,12 @@ export default function AgentDetails() {
               <div className="agent-identity-grid">
                 <div>
                   <span>Hostname</span>
-                  <strong>{details.hostname || metrics.hostname || "—"}</strong>
+                  <strong>
+                    {details.hostname ||
+                      metrics.hostname ||
+                      diskLatest?.hostname ||
+                      (isPending ? "Waiting for installation" : "—")}
+                  </strong>
                 </div>
 
                 <div>
@@ -401,7 +541,8 @@ export default function AgentDetails() {
                 <div>
                   <span>Platform</span>
                   <strong>
-                    {details.os || "unknown"} / {details.arch || "unknown"}
+                    {details.os || metrics.os || "unknown"} /{" "}
+                    {details.arch || metrics.arch || "unknown"}
                   </strong>
                 </div>
 
@@ -412,7 +553,7 @@ export default function AgentDetails() {
               </div>
             </section>
 
-            <section className="agent-status-card">
+            <section className="agent-status-card bright">
               <span>Agent Status</span>
               <strong>{normalizeAgentStatus(details.status)}</strong>
               <p>Current connectivity and heartbeat state of this agent.</p>
@@ -426,28 +567,152 @@ export default function AgentDetails() {
             </section>
           </div>
 
-          <div className="agent-metric-grid">
-            <div className="agent-usage-card cpu">
-              <span>CPU Usage</span>
-              <strong>{percent(metrics.cpu_usage)}</strong>
-              <small>Latest CPU consumption captured from agent heartbeat</small>
-              <i className="pi pi-microchip" />
-            </div>
-
-            <div className="agent-usage-card memory">
+          <div className="agent-metric-grid bright-grid">
+            
+            <div className="agent-usage-card memory bright-card">
               <span>Memory Usage</span>
               <strong>{percent(metrics.memory_usage)}</strong>
-              <small>Latest RAM usage captured from agent heartbeat</small>
+              <small>Latest RAM usage captured from heartbeat</small>
               <i className="pi pi-database" />
             </div>
 
-            <div className="agent-usage-card disk">
+            <div className="agent-usage-card disk bright-card">
               <span>Disk Usage</span>
               <strong>{percent(metrics.disk_usage)}</strong>
-              <small>Latest storage usage captured from agent heartbeat</small>
-              <i className="pi pi-hdd" />
+              <small>Latest storage usage captured from heartbeat</small>
+              <i className="pi pi-server" />
+            </div>
+
+            <div className="agent-usage-card storage bright-card">
+              <span>Reported Storage</span>
+              <strong>{formatBytes(storageSummary.total_reported_size_bytes)}</strong>
+              <small>Total size reported by latest disk maintenance scan</small>
+              <i className="pi pi-folder-open" />
             </div>
           </div>
+
+          <section className="agent-space-overview-card bright-card">
+            <div className="agent-space-overview-header">
+              <div>
+                <h2>
+                  <i className="pi pi-hdd" />
+                  Server space overview
+                </h2>
+                <p>Quick storage and maintenance summary for this server.</p>
+              </div>
+
+              <span className={`agent-space-score ${getUsageClass(diskUsage)}`}>
+                {percent(diskUsage)}
+              </span>
+            </div>
+
+            <div className="agent-space-meter">
+              <span style={{ width: `${Math.min(diskUsage, 100)}%` }} />
+            </div>
+
+            <div className="agent-space-grid">
+              <article>
+                <span>Status</span>
+                <strong>
+                  {diskUsage >= 90
+                    ? "Critical"
+                    : diskUsage >= 75
+                      ? "Warning"
+                      : diskUsage > 0
+                        ? "Healthy"
+                        : "Awaiting heartbeat"}
+                </strong>
+              </article>
+
+              <article>
+                <span>Reported Size</span>
+                <strong>{formatBytes(storageSummary.total_reported_size_bytes)}</strong>
+              </article>
+
+              <article>
+                <span>Top Directories</span>
+                <strong>{storageSummary.directories_count || 0}</strong>
+              </article>
+
+              <article>
+                <span>Log Files</span>
+                <strong>{storageSummary.log_files_count || 0}</strong>
+              </article>
+
+              <article>
+                <span>Log Candidates</span>
+                <strong>{storageSummary.total_candidates || 0}</strong>
+              </article>
+
+              <article>
+                <span>Truncated</span>
+                <strong>{storageSummary.total_truncated || 0}</strong>
+              </article>
+
+              <article>
+                <span>Errors</span>
+                <strong>{storageSummary.total_errors || 0}</strong>
+              </article>
+
+              <article>
+                <span>Captured At</span>
+                <strong>{formatDate(storageSummary.captured_at)}</strong>
+              </article>
+            </div>
+          </section>
+
+          <section className="agent-storage-insights-grid">
+            <div className="agent-insight-card bright-card">
+              <div className="agent-insight-top">
+                <span className="agent-insight-icon">
+                  <i className="pi pi-folder" />
+                </span>
+                <div>
+                  <h3>Largest directory</h3>
+                  <p>Main directory consuming the most space</p>
+                </div>
+              </div>
+
+              <strong className="agent-insight-value">
+                {storageSummary.largest_directory?.path || "—"}
+              </strong>
+              <small>{formatBytes(storageSummary.largest_directory?.size_bytes)}</small>
+            </div>
+
+            <div className="agent-insight-card bright-card">
+              <div className="agent-insight-top">
+                <span className="agent-insight-icon">
+                  <i className="pi pi-file" />
+                </span>
+                <div>
+                  <h3>Largest log file</h3>
+                  <p>Heaviest log file in the latest maintenance scan</p>
+                </div>
+              </div>
+
+              <strong className="agent-insight-value">
+                {storageSummary.largest_log_file?.path || "—"}
+              </strong>
+              <small>{formatBytes(storageSummary.largest_log_file?.size_bytes)}</small>
+            </div>
+
+            <div className="agent-insight-card bright-card">
+              <div className="agent-insight-top">
+                <span className="agent-insight-icon">
+                  <i className="pi pi-chart-line" />
+                </span>
+                <div>
+                  <h3>Trend samples</h3>
+                  <p>Heartbeat points used for the chart</p>
+                </div>
+              </div>
+
+              <strong className="agent-insight-value">
+                {details.trend_meta?.returned_count || sortedTrendLogs.length}
+              </strong>
+              <small>Loaded for graph analysis</small>
+            </div>
+          </section>
 
           <section className="agent-trends-section">
             <div className="agent-trends-header">
@@ -457,11 +722,11 @@ export default function AgentDetails() {
                   Server usage trends
                 </h2>
                 <p>
-                  CPU, memory and disk usage based on the heartbeat records currently loaded.
+                  CPU, memory and disk usage based on many heartbeat records, not only the table page.
                 </p>
               </div>
 
-              <span>{logs.length} samples</span>
+              <span>{details.trend_meta?.returned_count || sortedTrendLogs.length} trend samples</span>
             </div>
 
             <div className="agent-trend-grid">
@@ -491,7 +756,7 @@ export default function AgentDetails() {
             </div>
           </section>
 
-          <section className="agent-heartbeat-snapshot">
+          <section className="agent-heartbeat-snapshot bright-card">
             <h2>
               <i className="pi pi-clock" />
               Latest heartbeat snapshot
@@ -500,34 +765,155 @@ export default function AgentDetails() {
             <div>
               <article>
                 <span>Hostname</span>
-                <strong>{metrics.hostname || details.hostname || "—"}</strong>
+                <strong>{metrics.hostname || details.hostname || "Awaiting heartbeat"}</strong>
               </article>
 
               <article>
-                <span>IP</span>
-                <strong>{metrics.ip || details.last_ip || "—"}</strong>
+                <span>IP Address</span>
+                <strong>{metrics.ip || details.last_ip || "Awaiting heartbeat"}</strong>
               </article>
 
               <article>
-                <span>Version</span>
-                <strong>{metrics.agent_version || details.version || "—"}</strong>
+                <span>Agent Version</span>
+                <strong>{metrics.agent_version || details.version || "Not reported yet"}</strong>
+              </article>
+
+              <article>
+                <span>Operating System</span>
+                <strong>
+                  {details.os || metrics.os || "unknown"} /{" "}
+                  {details.arch || metrics.arch || "unknown"}
+                </strong>
+              </article>
+
+              <article>
+                <span>CPU Usage</span>
+                <strong>{percent(metrics.cpu_usage)}</strong>
+              </article>
+
+              <article>
+                <span>Memory Usage</span>
+                <strong>{percent(metrics.memory_usage)}</strong>
+              </article>
+
+              <article>
+                <span>Disk Usage</span>
+                <strong>{percent(metrics.disk_usage)}</strong>
               </article>
 
               <article>
                 <span>Captured At</span>
-                <strong>{formatDate(metrics.created_at)}</strong>
+                <strong>{formatDate(metrics.created_at || details.last_seen_at)}</strong>
               </article>
             </div>
           </section>
 
-          <section className="agent-logs-card">
+          <section className="agent-logs-card bright-card">
+            <div className="agent-logs-header">
+              <div>
+                <h2>
+                  <i className="pi pi-folder-open" />
+                  Top directories by storage
+                </h2>
+                <p>Largest directories reported by the latest disk maintenance scan.</p>
+              </div>
+
+              <span>Total: {topDirectories.length}</span>
+            </div>
+
+            <DataTable
+              value={topDirectories}
+              scrollable
+              scrollHeight="330px"
+              stripedRows
+              emptyMessage="No top directory data found."
+              className="agent-heartbeat-datatable"
+            >
+              <Column field="path" header="Directory" />
+              <Column header="Size" body={directorySizeBody} />
+            </DataTable>
+          </section>
+
+          <section className="agent-logs-card bright-card">
+            <div className="agent-logs-header">
+              <div>
+                <h2>
+                  <i className="pi pi-file" />
+                  Largest log files
+                </h2>
+                <p>Log files found during the latest disk maintenance scan.</p>
+              </div>
+
+              <span>Total: {logFiles.length}</span>
+            </div>
+
+            <DataTable
+              value={logFiles}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[5, 10, 20, 50]}
+              scrollable
+              scrollHeight="420px"
+              stripedRows
+              emptyMessage="No log file data found."
+              className="agent-heartbeat-datatable"
+            >
+              <Column field="path" header="Log File" style={{ minWidth: "360px" }} />
+              <Column header="Size" body={logFileSizeBody} />
+              <Column header="Modified At" body={logModifiedBody} />
+              <Column header="Candidate" body={candidateBody} />
+              <Column header="Truncated" body={truncatedBody} />
+            </DataTable>
+          </section>
+
+          <section className="agent-logs-card bright-card">
+            <div className="agent-logs-header">
+              <div>
+                <h2>
+                  <i className="pi pi-history" />
+                  Disk maintenance history
+                </h2>
+                <p>Recent disk maintenance reports received from the agent.</p>
+              </div>
+
+              <span>Total loaded: {diskReports.length}</span>
+            </div>
+
+            <DataTable
+              value={diskReports}
+              scrollable
+              scrollHeight="330px"
+              stripedRows
+              emptyMessage="No disk maintenance history found."
+              className="agent-heartbeat-datatable"
+            >
+              <Column
+                header="Captured At"
+                body={(row: any) => formatDate(row.created_at)}
+              />
+              <Column field="hostname" header="Hostname" />
+              <Column
+                header="Directories"
+                body={(row: any) => row.top_directories?.length || 0}
+              />
+              <Column
+                header="Log Files"
+                body={(row: any) => row.log_files?.length || 0}
+              />
+              <Column field="total_candidates" header="Candidates" />
+              <Column field="total_truncated" header="Truncated" />
+              <Column field="total_errors" header="Errors" />
+            </DataTable>
+          </section>
+
+          <section className="agent-logs-card bright-card">
             <div className="agent-logs-header">
               <div>
                 <h2>
                   <i className="pi pi-list" />
                   Agent heartbeat logs
                 </h2>
-                <p>Historical heartbeat entries captured for this agent.</p>
+                <p>Paginated heartbeat entries captured for this agent.</p>
               </div>
 
               <span>Total records: {details.pagination?.total || logs.length}</span>

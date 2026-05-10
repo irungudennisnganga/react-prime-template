@@ -117,7 +117,7 @@ export default function ServiceDetails() {
 
       const [serviceDetails, serviceLogs] = await Promise.all([
         agentServiceApi.details(id),
-        agentServiceApi.logs(id, 100),
+        agentServiceApi.logs(id, 500),
       ]);
 
       setDetails(serviceDetails);

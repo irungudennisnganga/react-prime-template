@@ -28,6 +28,16 @@ const MENUS: Record<string, MenuSection[]> = {
         { label: "Service Center", icon: "pi pi-desktop", path: "/services" },
         { label: "Alert View", icon: "pi pi-bell", path: "/alerts" },
         { label: "Team Management", icon: "pi pi-server", path: "/team" },
+        {
+          label: "Backup Policies",
+          icon: "pi pi-database",
+          path: "/backup-policies",
+        },
+        {
+          label: "Backup Logs",
+          icon: "pi pi-history",
+          path: "/backup-logs",
+        },
       ],
     },
     {
@@ -53,6 +63,16 @@ const MENUS: Record<string, MenuSection[]> = {
         { label: "Service Center", icon: "pi pi-desktop", path: "/services" },
         { label: "Alert View", icon: "pi pi-bell", path: "/alerts" },
         { label: "Team Management", icon: "pi pi-server", path: "/team" },
+        {
+          label: "Backup Policies",
+          icon: "pi pi-database",
+          path: "/backup-policies",
+        },
+        {
+          label: "Backup Logs",
+          icon: "pi pi-history",
+          path: "/backup-logs",
+        },
       ],
     },
   ],

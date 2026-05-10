@@ -23,6 +23,8 @@ const serviceTypes = [
   { label: "MongoDB", value: "mongodb" },
   { label: "Redis", value: "redis" },
   { label: "RabbitMQ", value: "rabbitmq" },
+  { label: "PostgreSQL", value: "postgresql" },
+  { label: "MySQL", value: "mysql" },
 ];
 
 const statusOptions = [
@@ -33,6 +35,8 @@ const statusOptions = [
 function defaultSystemService(type: AgentServiceType) {
   if (type === "redis") return "redis-server";
   if (type === "rabbitmq") return "rabbitmq-server";
+  if (type === "postgresql") return "postgresql";
+  if (type === "mysql") return "mysql";
 
   return "mongod";
 }
@@ -40,6 +44,8 @@ function defaultSystemService(type: AgentServiceType) {
 function defaultPort(type: AgentServiceType) {
   if (type === "redis") return 6379;
   if (type === "rabbitmq") return 5672;
+  if (type === "postgresql") return 5432;
+  if (type === "mysql") return 3306;
 
   return 27017;
 }
@@ -54,7 +60,15 @@ function getInitialForm(): AgentServicePayload {
     port: 27017,
     username: "",
     password: "",
-    database_name: "admin",
+
+    // IMPORTANT:
+    // Empty MongoDB database_name means backup all databases.
+    // Do not default this to admin.
+    database_name: "",
+
+    // auth_database is only used when MongoDB username/password are provided.
+    auth_database: "",
+
     rabbitmq_vhost: "/",
     check_interval_sec: 60,
     enabled: true,
@@ -102,7 +116,19 @@ export default function AddServiceModal({
       service_type: type,
       system_service: defaultSystemService(type),
       port: defaultPort(type),
-      database_name: type === "mongodb" ? prev.database_name || "admin" : "",
+
+      // MongoDB database name is optional.
+      // Empty means dump all databases on the server.
+      database_name:
+        type === "mongodb"
+          ? prev.database_name || ""
+          : type === "postgresql"
+            ? prev.database_name || "postgres"
+            : type === "mysql"
+              ? prev.database_name || ""
+              : "",
+
+      auth_database: type === "mongodb" ? prev.auth_database || "admin" : "",
       rabbitmq_vhost: type === "rabbitmq" ? prev.rabbitmq_vhost || "/" : "",
     }));
   };
@@ -138,12 +164,23 @@ export default function AddServiceModal({
       nextErrors.check_interval_sec = "Check interval is required";
     }
 
-    if (form.service_type === "mongodb" && !form.database_name?.trim()) {
-      nextErrors.database_name = "Database name is required";
+    if ((form.password || "").trim() && !(form.username || "").trim()) {
+      nextErrors.username = "Username is required when password is provided";
     }
+
+    // MongoDB database_name is intentionally optional.
+    // Empty database_name means backup all databases.
 
     if (form.service_type === "rabbitmq" && !form.rabbitmq_vhost?.trim()) {
       nextErrors.rabbitmq_vhost = "RabbitMQ vhost is required";
+    }
+
+    if (form.service_type === "postgresql" && !form.database_name?.trim()) {
+      nextErrors.database_name = "PostgreSQL database name is required";
+    }
+
+    if (form.service_type === "mysql" && !form.database_name?.trim()) {
+      nextErrors.database_name = "MySQL database name is required";
     }
 
     setErrors(nextErrors);
@@ -156,24 +193,43 @@ export default function AddServiceModal({
 
     if (!validate()) return;
 
+    const serviceType = form.service_type;
+
     const payload: AgentServicePayload = {
       ...form,
       agent_id: form.agent_id,
       name: form.name.trim(),
-      service_type: form.service_type,
+
+      // Send both fields so the backend can accept either.
+      service_type: serviceType,
+      type: serviceType,
+
       system_service: form.system_service.trim(),
       host: form.host.trim(),
       port: Number(form.port),
+
       username: form.username?.trim() || "",
       password: form.password || "",
+
       database_name:
-        form.service_type === "mongodb"
-          ? form.database_name?.trim() || "admin"
+        serviceType === "mongodb"
+          ? form.database_name?.trim() || ""
+          : serviceType === "postgresql"
+            ? form.database_name?.trim() || "postgres"
+            : serviceType === "mysql"
+              ? form.database_name?.trim() || ""
+              : "",
+
+      auth_database:
+        serviceType === "mongodb" && ((form.username || "").trim() || form.password)
+          ? form.auth_database?.trim() || "admin"
           : "",
+
       rabbitmq_vhost:
-        form.service_type === "rabbitmq"
+        serviceType === "rabbitmq"
           ? form.rabbitmq_vhost?.trim() || "/"
           : "",
+
       check_interval_sec: Number(form.check_interval_sec),
       enabled: Boolean(form.enabled),
       auto_restart: Boolean(form.auto_restart),
@@ -196,7 +252,8 @@ export default function AddServiceModal({
     >
       <form className="service-form" onSubmit={submit}>
         <p className="service-dialog-subtitle">
-          Create a monitored service for an agent.
+          Create a monitored service for an agent. For MongoDB, leave the
+          database name empty to back up all databases on that server.
         </p>
 
         <div className="service-form-grid">
@@ -308,6 +365,7 @@ export default function AddServiceModal({
             icon="pi pi-user"
             value={form.username || ""}
             placeholder="Optional username"
+            error={errors.username}
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
@@ -323,6 +381,7 @@ export default function AddServiceModal({
             icon="pi pi-lock"
             value={form.password || ""}
             placeholder="Optional password"
+            error={errors.password}
             onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
@@ -332,13 +391,67 @@ export default function AddServiceModal({
           />
 
           {form.service_type === "mongodb" && (
+            <>
+              <FormInput
+                label="Database Name Optional"
+                name="database_name"
+                type="text"
+                icon="pi pi-database"
+                value={form.database_name || ""}
+                placeholder="Leave empty to backup all databases"
+                error={errors.database_name}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    database_name: value,
+                  }))
+                }
+              />
+
+              <FormInput
+                label="Auth Database"
+                name="auth_database"
+                type="text"
+                icon="pi pi-shield"
+                value={form.auth_database || "admin"}
+                placeholder="admin"
+                error={errors.auth_database}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    auth_database: value,
+                  }))
+                }
+              />
+            </>
+          )}
+
+          {form.service_type === "postgresql" && (
             <FormInput
               label="Database Name"
               name="database_name"
               type="text"
               icon="pi pi-database"
               value={form.database_name || ""}
-              placeholder="admin"
+              placeholder="postgres"
+              error={errors.database_name}
+              onChange={(value) =>
+                setForm((prev) => ({
+                  ...prev,
+                  database_name: value,
+                }))
+              }
+            />
+          )}
+
+          {form.service_type === "mysql" && (
+            <FormInput
+              label="Database Name"
+              name="database_name"
+              type="text"
+              icon="pi pi-database"
+              value={form.database_name || ""}
+              placeholder="app_db"
               error={errors.database_name}
               onChange={(value) =>
                 setForm((prev) => ({
@@ -400,6 +513,14 @@ export default function AddServiceModal({
             />
           </div>
         </div>
+
+        {form.service_type === "mongodb" && (
+          <div className="service-help-box">
+            <strong>MongoDB backup mode:</strong>{" "}
+            Leave database name empty to back up all databases. Enter a database
+            name only when you want to back up one specific database.
+          </div>
+        )}
 
         <label className="service-checkbox-row">
           <Checkbox

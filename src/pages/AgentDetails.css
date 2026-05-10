@@ -1,0 +1,1248 @@
+/* =========================================================
+   AGENT DETAILS PAGE
+========================================================= */
+
+.agent-details-page {
+  min-height: 100vh;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 32%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 28%),
+    #f7f8fc;
+  color: #0f172a;
+}
+
+html.dark .agent-details-page {
+  background:
+    radial-gradient(circle at top left, rgba(23, 178, 106, 0.12), transparent 30%),
+    radial-gradient(circle at top right, rgba(125, 255, 189, 0.05), transparent 28%),
+    #07100d;
+  color: #f8fafc;
+}
+
+.agent-details-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.agent-details-top h1 {
+  margin: 0.6rem 0 0;
+  color: #0f172a;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 950;
+}
+
+.agent-details-top p {
+  max-width: 760px;
+  margin: 0.45rem 0 0;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+html.dark .agent-details-top h1 {
+  color: #f8fafc;
+}
+
+html.dark .agent-details-top p {
+  color: #9ca3af;
+}
+
+.agent-back-btn,
+.agent-refresh-circle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #dbe7ff;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 0.65rem 0.95rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.agent-refresh-circle {
+  min-width: 96px;
+  justify-content: center;
+}
+
+.agent-back-btn:hover,
+.agent-refresh-circle:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+html.dark .agent-back-btn,
+html.dark .agent-refresh-circle {
+  background: #0b1712;
+  color: #f8fafc;
+  border-color: rgba(125, 255, 189, 0.12);
+}
+
+html.dark .agent-back-btn:hover,
+html.dark .agent-refresh-circle:hover {
+  background: #17b26a;
+  border-color: #17b26a;
+  color: #06130d;
+}
+
+/* =========================================================
+   SHARED BRIGHT CARDS
+========================================================= */
+
+.bright-card,
+.agent-identity-card.bright,
+.agent-status-card.bright,
+.agent-heartbeat-snapshot.bright-card,
+.agent-logs-card.bright-card,
+.agent-space-overview-card.bright-card,
+.agent-insight-card.bright-card,
+.agent-pending-setup-card.bright-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid #dbe7ff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(33, 63, 125, 0.08);
+  color: #0f172a;
+}
+
+html.dark .bright-card,
+html.dark .agent-identity-card.bright,
+html.dark .agent-status-card.bright,
+html.dark .agent-heartbeat-snapshot.bright-card,
+html.dark .agent-logs-card.bright-card,
+html.dark .agent-space-overview-card.bright-card,
+html.dark .agent-insight-card.bright-card,
+html.dark .agent-pending-setup-card.bright-card {
+  background: linear-gradient(180deg, #07100d 0%, #0b1712 100%);
+  border-color: rgba(125, 255, 189, 0.12);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+  color: #f8fafc;
+}
+
+/* =========================================================
+   PENDING CARD
+========================================================= */
+
+.agent-pending-setup-card {
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.agent-pending-setup-card > div:first-child {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.agent-pending-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fef3c7, #fbbf24);
+  color: #92400e;
+  font-size: 1.25rem;
+}
+
+.agent-pending-setup-card h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.agent-pending-setup-card p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+html.dark .agent-pending-setup-card h2 {
+  color: #f8fafc;
+}
+
+html.dark .agent-pending-setup-card p {
+  color: #9ca3af;
+}
+
+.agent-pending-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+/* =========================================================
+   HERO GRID
+========================================================= */
+
+.agent-details-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.agent-identity-card,
+.agent-status-card {
+  padding: 1.2rem;
+}
+
+.agent-identity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.agent-identity-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.35rem;
+  font-weight: 950;
+}
+
+html.dark .agent-identity-header h2 {
+  color: #f8fafc;
+}
+
+.agent-identity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.agent-identity-grid > div,
+.agent-status-card > div {
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e5edff;
+}
+
+html.dark .agent-identity-grid > div,
+html.dark .agent-status-card > div {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(125, 255, 189, 0.1);
+}
+
+.agent-identity-grid span,
+.agent-status-card span,
+.agent-status-card small {
+  display: block;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.agent-identity-grid strong,
+.agent-status-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #0f172a;
+  font-weight: 950;
+  word-break: break-word;
+}
+
+.agent-status-card > strong {
+  font-size: 2rem;
+  margin-top: 0.45rem;
+}
+
+.agent-status-card p {
+  margin: 0.35rem 0 1rem;
+  color: #64748b;
+}
+
+html.dark .agent-identity-grid span,
+html.dark .agent-status-card span,
+html.dark .agent-status-card small,
+html.dark .agent-status-card p {
+  color: #9ca3af;
+}
+
+html.dark .agent-identity-grid strong,
+html.dark .agent-status-card strong {
+  color: #f8fafc;
+}
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+.agent-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  border: 1px solid transparent;
+  text-transform: capitalize;
+}
+
+.agent-status-badge.active {
+  color: #065f46;
+  background: rgba(16, 185, 129, 0.13);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.agent-status-badge.offline {
+  color: #991b1b;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.22);
+}
+
+.agent-status-badge.pending {
+  color: #92400e;
+  background: rgba(251, 191, 36, 0.16);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+html.dark .agent-status-badge.active {
+  color: #7dffbd;
+  background: rgba(23, 178, 106, 0.16);
+  border-color: rgba(125, 255, 189, 0.18);
+}
+
+html.dark .agent-status-badge.offline {
+  color: #fb7185;
+  background: rgba(251, 113, 133, 0.12);
+  border-color: rgba(251, 113, 133, 0.18);
+}
+
+html.dark .agent-status-badge.pending {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.18);
+}
+
+/* =========================================================
+   COLORFUL METRIC CARDS
+========================================================= */
+
+.agent-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.agent-usage-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 145px;
+  padding: 1.15rem;
+  border-radius: 22px;
+  color: #ffffff;
+  border: none !important;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14);
+}
+
+.agent-usage-card::after {
+  content: "";
+  position: absolute;
+  right: -42px;
+  bottom: -52px;
+  width: 125px;
+  height: 125px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.23);
+}
+
+/* Force metric card text to stay white */
+.agent-usage-card,
+.agent-usage-card span,
+.agent-usage-card strong,
+.agent-usage-card small,
+.agent-usage-card i,
+html.dark .agent-usage-card,
+html.dark .agent-usage-card span,
+html.dark .agent-usage-card strong,
+html.dark .agent-usage-card small,
+html.dark .agent-usage-card i {
+  color: #ffffff !important;
+}
+
+/* Make muted small text still white but slightly soft */
+.agent-usage-card small,
+html.dark .agent-usage-card small {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Make card title white */
+.agent-usage-card span,
+html.dark .agent-usage-card span {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* Make value very white */
+.agent-usage-card strong,
+html.dark .agent-usage-card strong {
+  color: #ffffff !important;
+}
+
+/* Make icon visible but subtle */
+.agent-usage-card i,
+html.dark .agent-usage-card i {
+  color: rgba(255, 255, 255, 0.28) !important;
+}
+.agent-usage-card span {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.agent-usage-card strong {
+  display: block;
+  margin-top: 0.85rem;
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.agent-usage-card small {
+  display: block;
+  max-width: 210px;
+  margin-top: 0.85rem;
+  line-height: 1.4;
+  opacity: 0.96;
+  font-weight: 750;
+}
+
+.agent-usage-card i {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.55rem;
+  opacity: 0.95;
+}
+
+.agent-usage-card.cpu {
+  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%) !important;
+}
+
+.agent-usage-card.memory {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%) !important;
+}
+
+.agent-usage-card.disk {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+}
+
+.agent-usage-card.storage {
+  background: linear-gradient(135deg, #f97316 0%, #fbbf24 100%) !important;
+}
+
+html.dark .agent-usage-card {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+}
+
+/* =========================================================
+   SPACE OVERVIEW
+========================================================= */
+
+.agent-space-overview-card {
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.agent-space-overview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.agent-space-overview-header h2,
+.agent-trends-header h2,
+.agent-logs-header h2,
+.agent-heartbeat-snapshot h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.2rem;
+  font-weight: 950;
+}
+
+.agent-space-overview-header p,
+.agent-trends-header p,
+.agent-logs-header p {
+  margin: 0.3rem 0 0;
+  color: #64748b;
+}
+
+html.dark .agent-space-overview-header h2,
+html.dark .agent-trends-header h2,
+html.dark .agent-logs-header h2,
+html.dark .agent-heartbeat-snapshot h2 {
+  color: #f8fafc;
+}
+
+html.dark .agent-space-overview-header p,
+html.dark .agent-trends-header p,
+html.dark .agent-logs-header p {
+  color: #9ca3af;
+}
+
+.agent-space-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.agent-space-score.good {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.agent-space-score.warning {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.agent-space-score.danger {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+html.dark .agent-space-score.good {
+  color: #7dffbd;
+  background: rgba(23, 178, 106, 0.16);
+}
+
+html.dark .agent-space-score.warning {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+}
+
+html.dark .agent-space-score.danger {
+  color: #fb7185;
+  background: rgba(251, 113, 133, 0.12);
+}
+
+.agent-space-meter {
+  height: 12px;
+  margin: 1rem 0;
+  border-radius: 999px;
+  background: #e5edff;
+  overflow: hidden;
+}
+
+.agent-space-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #059669, #10b981);
+}
+
+html.dark .agent-space-meter {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.dark .agent-space-meter span {
+  background: linear-gradient(90deg, #17b26a, #7dffbd);
+}
+
+.agent-space-grid,
+.agent-heartbeat-snapshot > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.agent-space-grid article,
+.agent-heartbeat-snapshot article,
+.agent-pending-grid article {
+  background: #ffffff;
+  border: 1px solid #e5edff;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+}
+
+html.dark .agent-space-grid article,
+html.dark .agent-heartbeat-snapshot article,
+html.dark .agent-pending-grid article {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(125, 255, 189, 0.1);
+}
+
+.agent-space-grid article span,
+.agent-heartbeat-snapshot article span,
+.agent-pending-grid article span {
+  display: block;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.agent-space-grid article strong,
+.agent-heartbeat-snapshot article strong,
+.agent-pending-grid article strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #0f172a;
+  font-weight: 950;
+  word-break: break-word;
+}
+
+html.dark .agent-space-grid article span,
+html.dark .agent-heartbeat-snapshot article span,
+html.dark .agent-pending-grid article span {
+  color: #9ca3af;
+}
+
+html.dark .agent-space-grid article strong,
+html.dark .agent-heartbeat-snapshot article strong,
+html.dark .agent-pending-grid article strong {
+  color: #f8fafc;
+}
+
+/* =========================================================
+   STORAGE INSIGHT CARDS
+========================================================= */
+
+.agent-storage-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.agent-insight-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.1rem 1.2rem;
+}
+
+.agent-insight-card::after {
+  content: "";
+  position: absolute;
+  right: -38px;
+  bottom: -48px;
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  opacity: 0.18;
+}
+
+.agent-insight-card.largest-directory::after {
+  background: #10b981;
+}
+
+.agent-insight-card.largest-log::after {
+  background: #f97316;
+}
+
+.agent-insight-card.trend-samples::after {
+  background: #2563eb;
+}
+
+.agent-insight-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.agent-insight-icon {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1d4ed8;
+  font-size: 1.1rem;
+}
+
+.agent-insight-card.largest-directory .agent-insight-icon {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #15803d;
+}
+
+.agent-insight-card.largest-log .agent-insight-icon {
+  background: linear-gradient(135deg, #ffedd5, #fed7aa);
+  color: #c2410c;
+}
+
+.agent-insight-card.trend-samples .agent-insight-icon {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1d4ed8;
+}
+
+html.dark .agent-insight-icon,
+html.dark .agent-insight-card.largest-directory .agent-insight-icon,
+html.dark .agent-insight-card.largest-log .agent-insight-icon,
+html.dark .agent-insight-card.trend-samples .agent-insight-icon {
+  background: linear-gradient(
+    135deg,
+    rgba(23, 178, 106, 0.28),
+    rgba(125, 255, 189, 0.13)
+  );
+  color: #7dffbd;
+}
+
+.agent-insight-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.agent-insight-card p {
+  margin: 0.2rem 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.agent-insight-value {
+  position: relative;
+  z-index: 2;
+  display: block;
+  font-size: 1rem;
+  color: #0f172a;
+  word-break: break-word;
+  margin-bottom: 0.25rem;
+}
+
+.agent-insight-card small {
+  position: relative;
+  z-index: 2;
+  color: #64748b;
+}
+
+html.dark .agent-insight-card h3,
+html.dark .agent-insight-value {
+  color: #f8fafc;
+}
+
+html.dark .agent-insight-card p,
+html.dark .agent-insight-card small {
+  color: #9ca3af;
+}
+
+/* =========================================================
+   TREND SECTION
+========================================================= */
+
+.agent-trends-section {
+  margin-bottom: 1.2rem;
+}
+
+.agent-trends-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.agent-trends-header > span,
+.agent-logs-header > span {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 900;
+  font-size: 0.8rem;
+}
+
+html.dark .agent-trends-header > span,
+html.dark .agent-logs-header > span {
+  background: rgba(23, 178, 106, 0.16);
+  color: #7dffbd;
+}
+
+.agent-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.agent-trend-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid #dbe7ff;
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: 0 10px 28px rgba(33, 63, 125, 0.08);
+  color: #0f172a;
+}
+
+html.dark .agent-trend-card {
+  background: linear-gradient(180deg, #07100d 0%, #0b1712 100%);
+  border-color: rgba(125, 255, 189, 0.12);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.36);
+  color: #f8fafc;
+}
+
+.agent-trend-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.agent-trend-card-header > div {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.agent-trend-card h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.agent-trend-card p {
+  margin: 0.2rem 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.agent-trend-card-header > strong {
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 950;
+}
+
+html.dark .agent-trend-card h3,
+html.dark .agent-trend-card strong {
+  color: #f8fafc;
+}
+
+html.dark .agent-trend-card p,
+html.dark .agent-trend-stats span {
+  color: #9ca3af;
+}
+
+.agent-trend-icon {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-trend-card.cpu .agent-trend-icon {
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  color: #0369a1;
+}
+
+.agent-trend-card.memory .agent-trend-icon {
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  color: #6d28d9;
+}
+
+.agent-trend-card.disk .agent-trend-icon {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #15803d;
+}
+
+html.dark .agent-trend-card.cpu .agent-trend-icon,
+html.dark .agent-trend-card.memory .agent-trend-icon,
+html.dark .agent-trend-card.disk .agent-trend-icon {
+  background: linear-gradient(
+    135deg,
+    rgba(23, 178, 106, 0.28),
+    rgba(125, 255, 189, 0.14)
+  );
+  color: #7dffbd;
+}
+
+.agent-trend-chart-wrap {
+  width: 100%;
+  overflow: hidden;
+}
+
+.agent-trend-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.agent-trend-axis,
+.agent-trend-grid-line {
+  stroke: #dbe7ff;
+}
+
+.agent-trend-y-label,
+.agent-trend-x-label {
+  fill: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.agent-trend-area {
+  fill: rgba(37, 99, 235, 0.1);
+}
+
+.agent-trend-line {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 3;
+}
+
+.agent-trend-dot {
+  fill: #ffffff;
+  stroke: #2563eb;
+  stroke-width: 3;
+}
+
+html.dark .agent-trend-axis,
+html.dark .agent-trend-grid-line {
+  stroke: rgba(125, 255, 189, 0.1);
+}
+
+html.dark .agent-trend-y-label,
+html.dark .agent-trend-x-label {
+  fill: #9ca3af;
+}
+
+html.dark .agent-trend-area {
+  fill: rgba(23, 178, 106, 0.1);
+}
+
+html.dark .agent-trend-line {
+  stroke: #17b26a;
+}
+
+html.dark .agent-trend-dot {
+  fill: #07100d;
+  stroke: #7dffbd;
+}
+
+.agent-trend-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+}
+
+.agent-trend-stats div {
+  padding: 0.7rem;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e5edff;
+}
+
+html.dark .agent-trend-stats div {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(125, 255, 189, 0.1);
+}
+
+.agent-trend-stats span {
+  display: block;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.agent-trend-stats strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #0f172a;
+  font-weight: 950;
+}
+
+/* =========================================================
+   SNAPSHOT AND TABLE CARDS
+========================================================= */
+
+.agent-heartbeat-snapshot,
+.agent-logs-card {
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.agent-heartbeat-snapshot h2 {
+  margin-bottom: 1rem;
+}
+
+.agent-logs-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* =========================================================
+   DATATABLE
+========================================================= */
+
+.agent-heartbeat-datatable .p-datatable-thead > tr > th {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #e5edff;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.agent-heartbeat-datatable .p-datatable-tbody > tr {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.agent-heartbeat-datatable .p-datatable-tbody > tr > td {
+  border-color: #e5edff;
+  color: #0f172a;
+  vertical-align: middle;
+}
+
+.agent-heartbeat-datatable .p-datatable-tbody > tr:hover {
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.agent-heartbeat-datatable .p-paginator {
+  background: #ffffff;
+  border-color: #e5edff;
+  color: #0f172a;
+}
+
+html.dark .agent-heartbeat-datatable .p-datatable-thead > tr > th {
+  background: rgba(255, 255, 255, 0.04);
+  color: #9ca3af;
+  border-color: rgba(125, 255, 189, 0.1);
+}
+
+html.dark .agent-heartbeat-datatable .p-datatable-tbody > tr {
+  background: #07100d;
+  color: #f8fafc;
+}
+
+html.dark .agent-heartbeat-datatable .p-datatable-tbody > tr > td {
+  border-color: rgba(125, 255, 189, 0.08);
+  color: #f8fafc;
+}
+
+html.dark .agent-heartbeat-datatable .p-datatable-tbody > tr:hover {
+  background: rgba(23, 178, 106, 0.08);
+}
+
+html.dark .agent-heartbeat-datatable .p-paginator {
+  background: #07100d;
+  border-color: rgba(125, 255, 189, 0.1);
+  color: #f8fafc;
+}
+
+html.dark .agent-heartbeat-datatable .p-paginator .p-paginator-page,
+html.dark .agent-heartbeat-datatable .p-paginator .p-paginator-next,
+html.dark .agent-heartbeat-datatable .p-paginator .p-paginator-prev,
+html.dark .agent-heartbeat-datatable .p-paginator .p-paginator-first,
+html.dark .agent-heartbeat-datatable .p-paginator .p-paginator-last {
+  color: #9ca3af;
+}
+
+html.dark .agent-heartbeat-datatable .p-paginator .p-highlight {
+  background: #17b26a;
+  color: #06130d;
+}
+
+/* =========================================================
+   PILLS AND BADGES
+========================================================= */
+
+.agent-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.agent-metric-pill.cpu {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.agent-metric-pill.memory {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.agent-metric-pill.disk {
+  background: #dcfce7;
+  color: #166534;
+}
+
+html.dark .agent-metric-pill.cpu,
+html.dark .agent-metric-pill.memory,
+html.dark .agent-metric-pill.disk {
+  background: rgba(23, 178, 106, 0.16);
+  color: #7dffbd;
+}
+
+.agent-inline-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.agent-inline-badge.neutral {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.agent-inline-badge.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.agent-inline-badge.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+html.dark .agent-inline-badge.neutral {
+  background: rgba(255, 255, 255, 0.055);
+  color: #cbd5e1;
+}
+
+html.dark .agent-inline-badge.warning {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+html.dark .agent-inline-badge.success {
+  background: rgba(23, 178, 106, 0.16);
+  color: #7dffbd;
+}
+
+.agent-date-cell strong {
+  display: block;
+  color: #0f172a;
+  font-weight: 850;
+}
+
+.agent-date-cell span {
+  display: block;
+  margin-top: 0.2rem;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+html.dark .agent-date-cell strong {
+  color: #f8fafc;
+}
+
+html.dark .agent-date-cell span {
+  color: #9ca3af;
+}
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #dbe7ff;
+  color: #0f172a;
+}
+
+.empty-state i {
+  font-size: 2rem;
+  color: #2563eb;
+}
+
+.empty-state h3 {
+  margin: 0.75rem 0 0;
+}
+
+.empty-state p {
+  margin: 0.3rem 0 0;
+  color: #64748b;
+}
+
+html.dark .empty-state {
+  background: #0b1712;
+  border-color: rgba(125, 255, 189, 0.12);
+  color: #f8fafc;
+}
+
+html.dark .empty-state i {
+  color: #7dffbd;
+}
+
+html.dark .empty-state p {
+  color: #9ca3af;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1200px) {
+  .agent-metric-grid,
+  .agent-space-grid,
+  .agent-heartbeat-snapshot > div,
+  .agent-identity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agent-trend-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .agent-details-hero-grid,
+  .agent-storage-insights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-details-top,
+  .agent-trends-header,
+  .agent-logs-header,
+  .agent-space-overview-header {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .agent-details-page {
+    padding: 1rem;
+  }
+
+  .agent-metric-grid,
+  .agent-space-grid,
+  .agent-heartbeat-snapshot > div,
+  .agent-identity-grid,
+  .agent-pending-grid,
+  .agent-trend-stats {
+    grid-template-columns: 1fr;
+  }
+}

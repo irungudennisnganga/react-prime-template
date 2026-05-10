@@ -22,6 +22,10 @@ import Profile from "./pages/Profile";
 import AgentReleasesPage from "./pages/AgentRelease/AgentReleasesPage";
 import TenantsPage from "./pages/AdminTenantMng/TenantsPage";
 import SuperAdminDashboard from "./pages/superAdmin/SuperAdminDashboard";
+import BackupPolicies from "./pages/BackupPolicies/BackupPolicies";
+import CreateBackupPolicy from "./pages/BackupPolicies/CreateBackupPolicy";
+import BackupPolicyDetails from "./pages/BackupPolicies/BackupPolicyDetails";
+import BackupLogs from "./pages/BackupPolicies/BackupLogs";
 // import AlertEmails from "./pages/AlertEmails";
 import { AppToastProvider } from "./components/ui/AppToast";
 import { useAppSelector } from "./store/hooks";
@@ -199,6 +203,28 @@ function App() {
               </AppLayout>
             }
           />
+
+          <Route path="/backup-policies" element={
+            <AppLayout>
+
+              <BackupPolicies />
+            </AppLayout>
+            } />
+          <Route path="/backup-policies/create" element={
+            <AppLayout>
+              <CreateBackupPolicy />
+            </AppLayout>
+          } />
+          <Route path="/backup-policies/:id" element={
+            <AppLayout>
+              <BackupPolicyDetails />
+            </AppLayout>
+          } />
+          <Route path="/backup-logs" element={
+            <AppLayout>
+              <BackupLogs />
+            </AppLayout>
+          } />
 
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />

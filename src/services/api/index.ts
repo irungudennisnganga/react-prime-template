@@ -9,3 +9,4 @@ export * from "./alert.api";
 export * from "./team.api";
 export * from "./agentRelease.api";
 export * from "./allTenants.api";
+export * from "./backupPolicy.api";
