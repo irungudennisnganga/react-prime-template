@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { Checkbox } from "primereact/checkbox";
@@ -19,7 +19,21 @@ type AddServiceModalProps = {
   onSubmit: (payload: AgentServicePayload) => void;
 };
 
-const serviceTypes = [
+type AddServiceFormPayload = AgentServicePayload & {
+  /**
+   * MongoDB authentication database.
+   * This is needed when username/password are provided.
+   */
+  auth_database?: string;
+
+  /**
+   * Some backend handlers accept `type`, while the frontend official field is
+   * `service_type`.
+   */
+  type?: AgentServiceType;
+};
+
+const serviceTypes: Array<{ label: string; value: AgentServiceType }> = [
   { label: "MongoDB", value: "mongodb" },
   { label: "Redis", value: "redis" },
   { label: "RabbitMQ", value: "rabbitmq" },
@@ -50,7 +64,7 @@ function defaultPort(type: AgentServiceType) {
   return 27017;
 }
 
-function getInitialForm(): AgentServicePayload {
+function getInitialForm(): AddServiceFormPayload {
   return {
     agent_id: "",
     name: "",
@@ -61,12 +75,15 @@ function getInitialForm(): AgentServicePayload {
     username: "",
     password: "",
 
-    // IMPORTANT:
-    // Empty MongoDB database_name means backup all databases.
-    // Do not default this to admin.
+    /**
+     * Empty MongoDB database_name means backup all databases.
+     * Do not default this to admin.
+     */
     database_name: "",
 
-    // auth_database is only used when MongoDB username/password are provided.
+    /**
+     * Only used for MongoDB authentication when username/password are provided.
+     */
     auth_database: "",
 
     rabbitmq_vhost: "/",
@@ -83,32 +100,34 @@ export default function AddServiceModal({
   onHide,
   onSubmit,
 }: AddServiceModalProps) {
-  const [form, setForm] = useState<AgentServicePayload>(getInitialForm());
+  const [form, setForm] = useState<AddServiceFormPayload>(getInitialForm());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const agentOptions = agents
-    .map((agent) => {
-      const id = getAgentId(agent);
+  const agentOptions = useMemo(() => {
+    return agents
+      .map((agent) => {
+        const id = getAgentId(agent);
 
-      return {
-        label: `${agent.name}${agent.site ? ` - ${agent.site}` : ""}`,
-        value: id,
-      };
-    })
-    .filter((agent) => Boolean(agent.value));
+        return {
+          label: `${agent.name}${agent.site ? ` - ${agent.site}` : ""}`,
+          value: id,
+        };
+      })
+      .filter((agent) => Boolean(agent.value));
+  }, [agents]);
 
   useEffect(() => {
-    if (visible) {
-      setErrors({});
+    if (!visible) return;
 
-      setForm((prev) => ({
-        ...prev,
-        agent_id:
-          prev.agent_id ||
-          (agentOptions.length > 0 ? String(agentOptions[0].value) : ""),
-      }));
-    }
-  }, [visible, agents]);
+    setErrors({});
+
+    setForm((prev) => ({
+      ...prev,
+      agent_id:
+        prev.agent_id ||
+        (agentOptions.length > 0 ? String(agentOptions[0].value) : ""),
+    }));
+  }, [visible, agentOptions]);
 
   const updateServiceType = (type: AgentServiceType) => {
     setForm((prev) => ({
@@ -117,8 +136,6 @@ export default function AddServiceModal({
       system_service: defaultSystemService(type),
       port: defaultPort(type),
 
-      // MongoDB database name is optional.
-      // Empty means dump all databases on the server.
       database_name:
         type === "mongodb"
           ? prev.database_name || ""
@@ -129,6 +146,7 @@ export default function AddServiceModal({
               : "",
 
       auth_database: type === "mongodb" ? prev.auth_database || "admin" : "",
+
       rabbitmq_vhost: type === "rabbitmq" ? prev.rabbitmq_vhost || "/" : "",
     }));
   };
@@ -140,7 +158,7 @@ export default function AddServiceModal({
       nextErrors.agent_id = "Agent is required";
     }
 
-    if (!form.name.trim()) {
+    if (!form.name?.trim()) {
       nextErrors.name = "Service name is required";
     }
 
@@ -148,11 +166,11 @@ export default function AddServiceModal({
       nextErrors.service_type = "Service type is required";
     }
 
-    if (!form.system_service.trim()) {
+    if (!form.system_service?.trim()) {
       nextErrors.system_service = "System service is required";
     }
 
-    if (!form.host.trim()) {
+    if (!form.host?.trim()) {
       nextErrors.host = "Host is required";
     }
 
@@ -168,8 +186,14 @@ export default function AddServiceModal({
       nextErrors.username = "Username is required when password is provided";
     }
 
-    // MongoDB database_name is intentionally optional.
-    // Empty database_name means backup all databases.
+    if (
+      form.service_type === "mongodb" &&
+      ((form.username || "").trim() || (form.password || "").trim()) &&
+      !form.auth_database?.trim()
+    ) {
+      nextErrors.auth_database =
+        "Auth database is required when MongoDB credentials are provided";
+    }
 
     if (form.service_type === "rabbitmq" && !form.rabbitmq_vhost?.trim()) {
       nextErrors.rabbitmq_vhost = "RabbitMQ vhost is required";
@@ -195,12 +219,10 @@ export default function AddServiceModal({
 
     const serviceType = form.service_type;
 
-    const payload: AgentServicePayload = {
-      ...form,
+    const payload = {
       agent_id: form.agent_id,
       name: form.name.trim(),
 
-      // Send both fields so the backend can accept either.
       service_type: serviceType,
       type: serviceType,
 
@@ -221,23 +243,27 @@ export default function AddServiceModal({
               : "",
 
       auth_database:
-        serviceType === "mongodb" && ((form.username || "").trim() || form.password)
+        serviceType === "mongodb" &&
+        ((form.username || "").trim() || (form.password || "").trim())
           ? form.auth_database?.trim() || "admin"
           : "",
 
       rabbitmq_vhost:
-        serviceType === "rabbitmq"
-          ? form.rabbitmq_vhost?.trim() || "/"
-          : "",
+        serviceType === "rabbitmq" ? form.rabbitmq_vhost?.trim() || "/" : "",
 
       check_interval_sec: Number(form.check_interval_sec),
       enabled: Boolean(form.enabled),
       auto_restart: Boolean(form.auto_restart),
-    };
+    } satisfies AddServiceFormPayload;
 
     console.log("[AddServiceModal] submit payload", payload);
 
-    onSubmit(payload);
+    /**
+     * Cast is intentional:
+     * The backend accepts extra fields like `type` and `auth_database`,
+     * but the shared AgentServicePayload type has not declared them yet.
+     */
+    onSubmit(payload as AgentServicePayload);
   };
 
   return (
@@ -524,7 +550,7 @@ export default function AddServiceModal({
 
         <label className="service-checkbox-row">
           <Checkbox
-            checked={form.auto_restart}
+            checked={Boolean(form.auto_restart)}
             onChange={(event) =>
               setForm((prev) => ({
                 ...prev,

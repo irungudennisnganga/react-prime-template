@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from 'axios'
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
+
 import "./AgentDetails.css";
 import PageLoader from "../components/ui/PageLoader";
 import { useAppToast } from "../components/ui/AppToast";
@@ -13,6 +13,61 @@ import {
   AgentDirectoryUsage,
   agentApi,
 } from "../services/api";
+
+type AgentTrendMeta = {
+  returned_count?: number;
+  total_count?: number;
+  limit?: number;
+};
+
+type AgentStorageSummary = {
+  total_reported_size_bytes?: number;
+  directories_count?: number;
+  log_files_count?: number;
+  total_candidates?: number;
+  total_truncated?: number;
+  total_errors?: number;
+  captured_at?: string;
+  largest_directory?: {
+    path?: string;
+    size_bytes?: number;
+  };
+  largest_log_file?: {
+    path?: string;
+    size_bytes?: number;
+  };
+};
+
+type ExtendedAgentMetrics = NonNullable<AgentDetailsType["metrics"]> & {
+  os?: string;
+  arch?: string;
+};
+
+type ExtendedAgentDetails = AgentDetailsType & {
+  os?: string;
+  arch?: string;
+
+  metrics?: ExtendedAgentMetrics;
+
+  heartbeat_trend_logs?: AgentHeartbeatLog[];
+  trend_meta?: AgentTrendMeta;
+
+  disk_maintenance_latest?: {
+    hostname?: string;
+    created_at?: string;
+    captured_at?: string;
+    top_directories?: AgentDirectoryUsage[];
+    log_files?: AgentLogFileReport[];
+    total_candidates?: number;
+    total_truncated?: number;
+    total_errors?: number;
+  };
+
+  storage_summary?: AgentStorageSummary;
+  top_directories?: AgentDirectoryUsage[];
+  log_files?: AgentLogFileReport[];
+  disk_maintenance_reports?: any[];
+};
 
 function normalizeAgentStatus(status?: string) {
   const value = String(status || "pending").toLowerCase();
@@ -34,15 +89,22 @@ function getAgentStatusClass(status?: string) {
 
 function formatDate(date?: string) {
   if (!date) return "—";
-  const d = new Date(date);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString();
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return "—";
+
+  return parsedDate.toLocaleString();
 }
 
 function formatShortTime(date?: string) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleTimeString([], {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return "—";
+
+  return parsedDate.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -67,6 +129,7 @@ function getUsageClass(value?: number) {
 
   if (numeric >= 90) return "danger";
   if (numeric >= 75) return "warning";
+
   return "good";
 }
 
@@ -218,6 +281,7 @@ function MetricTrendChart({
                       y2={y}
                       className="agent-trend-grid-line"
                     />
+
                     <text
                       x={paddingX - 8}
                       y={y + 4}
@@ -280,8 +344,6 @@ function MetricTrendChart({
               <span>Lowest</span>
               <strong>{percent(lowest)}</strong>
             </div>
-
-            
           </div>
         </>
       )}
@@ -294,7 +356,7 @@ export default function AgentDetails() {
   const navigate = useNavigate();
   const { showToast } = useAppToast();
 
-  const [details, setDetails] = useState<AgentDetailsType | null>(null);
+  const [details, setDetails] = useState<ExtendedAgentDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -305,8 +367,9 @@ export default function AgentDetails() {
     try {
       setLoading(true);
 
-      const data = await agentApi.details(id, nextPage, nextPageSize, 1000);
-      setDetails(data);
+      const data = await agentApi.details(id, nextPage, nextPageSize);
+
+      setDetails(data as ExtendedAgentDetails);
       setPage(nextPage);
       setPageSize(nextPageSize);
     } catch (error: any) {
@@ -322,20 +385,27 @@ export default function AgentDetails() {
 
   useEffect(() => {
     loadDetails(1, 10);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const logs = details?.heartbeat_logs || [];
+
   const trendLogs =
     details?.heartbeat_trend_logs && details.heartbeat_trend_logs.length > 0
       ? details.heartbeat_trend_logs
       : logs;
 
-  const metrics = details?.metrics || {};
+  const metrics: ExtendedAgentMetrics = details?.metrics || {};
+
   const diskLatest = details?.disk_maintenance_latest;
-  const storageSummary = details?.storage_summary || {};
-  const topDirectories = details?.top_directories || [];
-  const logFiles = details?.log_files || [];
-  const diskReports = details?.disk_maintenance_reports || [];
+
+  const storageSummary: AgentStorageSummary = details?.storage_summary || {};
+
+  const topDirectories: AgentDirectoryUsage[] = details?.top_directories || [];
+
+  const logFiles: AgentLogFileReport[] = details?.log_files || [];
+
+  const diskReports: any[] = details?.disk_maintenance_reports || [];
 
   const isPending = normalizeAgentStatus(details?.status) === "pending";
 
@@ -374,7 +444,9 @@ export default function AgentDetails() {
   }, [sortedTrendLogs]);
 
   const cpuBody = (row: AgentHeartbeatLog) => {
-    return <span className="agent-metric-pill cpu">{percent(row.cpu_usage)}</span>;
+    return (
+      <span className="agent-metric-pill cpu">{percent(row.cpu_usage)}</span>
+    );
   };
 
   const memoryBody = (row: AgentHeartbeatLog) => {
@@ -386,7 +458,9 @@ export default function AgentDetails() {
   };
 
   const diskBody = (row: AgentHeartbeatLog) => {
-    return <span className="agent-metric-pill disk">{percent(row.disk_usage)}</span>;
+    return (
+      <span className="agent-metric-pill disk">{percent(row.disk_usage)}</span>
+    );
   };
 
   const timestampBody = (row: AgentHeartbeatLog) => {
@@ -399,11 +473,19 @@ export default function AgentDetails() {
   };
 
   const directorySizeBody = (row: AgentDirectoryUsage) => {
-    return <span className="agent-metric-pill disk">{formatBytes(row.size_bytes)}</span>;
+    return (
+      <span className="agent-metric-pill disk">
+        {formatBytes(row.size_bytes)}
+      </span>
+    );
   };
 
   const logFileSizeBody = (row: AgentLogFileReport) => {
-    return <span className="agent-metric-pill disk">{formatBytes(row.size_bytes)}</span>;
+    return (
+      <span className="agent-metric-pill disk">
+        {formatBytes(row.size_bytes)}
+      </span>
+    );
   };
 
   const logModifiedBody = (row: AgentLogFileReport) => {
@@ -417,7 +499,11 @@ export default function AgentDetails() {
 
   const candidateBody = (row: AgentLogFileReport) => {
     return (
-      <span className={`agent-inline-badge ${row.is_candidate ? "warning" : "neutral"}`}>
+      <span
+        className={`agent-inline-badge ${
+          row.is_candidate ? "warning" : "neutral"
+        }`}
+      >
         {row.is_candidate ? "Candidate" : "Normal"}
       </span>
     );
@@ -425,7 +511,11 @@ export default function AgentDetails() {
 
   const truncatedBody = (row: AgentLogFileReport) => {
     return (
-      <span className={`agent-inline-badge ${row.truncated ? "success" : "neutral"}`}>
+      <span
+        className={`agent-inline-badge ${
+          row.truncated ? "success" : "neutral"
+        }`}
+      >
         {row.truncated ? "Truncated" : "No"}
       </span>
     );
@@ -447,9 +537,10 @@ export default function AgentDetails() {
           </button>
 
           <h1>Agent details</h1>
+
           <p>
-            View identity, heartbeat metrics, full usage trends, storage overview,
-            top directories, log files and disk maintenance history.
+            View identity, heartbeat metrics, full usage trends, storage
+            overview, top directories, log files and disk maintenance history.
           </p>
         </div>
 
@@ -457,8 +548,16 @@ export default function AgentDetails() {
           type="button"
           className="agent-refresh-circle"
           onClick={() => loadDetails(page, pageSize)}
+          disabled={loading}
         >
-          Refresh
+          {loading ? (
+            <>
+              <i className="pi pi-spin pi-spinner" />
+              Refreshing
+            </>
+          ) : (
+            "Refresh"
+          )}
         </button>
       </div>
 
@@ -482,9 +581,10 @@ export default function AgentDetails() {
                 <div>
                   <h2>Agent created, waiting for installation</h2>
                   <p>
-                    This agent has been created but has not sent its first heartbeat yet.
-                    Install and start the agent on the target server to begin collecting CPU,
-                    memory, disk, services, backups and system health data.
+                    This agent has been created but has not sent its first
+                    heartbeat yet. Install and start the agent on the target
+                    server to begin collecting CPU, memory, disk, services,
+                    backups and system health data.
                   </p>
                 </div>
               </div>
@@ -517,6 +617,7 @@ export default function AgentDetails() {
             <section className="agent-identity-card bright">
               <div className="agent-identity-header">
                 <h2>{details.name}</h2>
+
                 <span className={getAgentStatusClass(details.status)}>
                   {normalizeAgentStatus(details.status)}
                 </span>
@@ -568,7 +669,13 @@ export default function AgentDetails() {
           </div>
 
           <div className="agent-metric-grid bright-grid">
-            
+            <div className="agent-usage-card cpu bright-card">
+              <span>CPU Usage</span>
+              <strong>{percent(metrics.cpu_usage)}</strong>
+              <small>Latest processor usage captured from heartbeat</small>
+              <i className="pi pi-server" />
+            </div>
+
             <div className="agent-usage-card memory bright-card">
               <span>Memory Usage</span>
               <strong>{percent(metrics.memory_usage)}</strong>
@@ -580,12 +687,14 @@ export default function AgentDetails() {
               <span>Disk Usage</span>
               <strong>{percent(metrics.disk_usage)}</strong>
               <small>Latest storage usage captured from heartbeat</small>
-              <i className="pi pi-server" />
+              <i className="pi pi-hdd" />
             </div>
 
             <div className="agent-usage-card storage bright-card">
               <span>Reported Storage</span>
-              <strong>{formatBytes(storageSummary.total_reported_size_bytes)}</strong>
+              <strong>
+                {formatBytes(storageSummary.total_reported_size_bytes)}
+              </strong>
               <small>Total size reported by latest disk maintenance scan</small>
               <i className="pi pi-folder-open" />
             </div>
@@ -598,6 +707,7 @@ export default function AgentDetails() {
                   <i className="pi pi-hdd" />
                   Server space overview
                 </h2>
+
                 <p>Quick storage and maintenance summary for this server.</p>
               </div>
 
@@ -626,7 +736,9 @@ export default function AgentDetails() {
 
               <article>
                 <span>Reported Size</span>
-                <strong>{formatBytes(storageSummary.total_reported_size_bytes)}</strong>
+                <strong>
+                  {formatBytes(storageSummary.total_reported_size_bytes)}
+                </strong>
               </article>
 
               <article>
@@ -667,6 +779,7 @@ export default function AgentDetails() {
                 <span className="agent-insight-icon">
                   <i className="pi pi-folder" />
                 </span>
+
                 <div>
                   <h3>Largest directory</h3>
                   <p>Main directory consuming the most space</p>
@@ -676,7 +789,10 @@ export default function AgentDetails() {
               <strong className="agent-insight-value">
                 {storageSummary.largest_directory?.path || "—"}
               </strong>
-              <small>{formatBytes(storageSummary.largest_directory?.size_bytes)}</small>
+
+              <small>
+                {formatBytes(storageSummary.largest_directory?.size_bytes)}
+              </small>
             </div>
 
             <div className="agent-insight-card bright-card">
@@ -684,6 +800,7 @@ export default function AgentDetails() {
                 <span className="agent-insight-icon">
                   <i className="pi pi-file" />
                 </span>
+
                 <div>
                   <h3>Largest log file</h3>
                   <p>Heaviest log file in the latest maintenance scan</p>
@@ -693,7 +810,10 @@ export default function AgentDetails() {
               <strong className="agent-insight-value">
                 {storageSummary.largest_log_file?.path || "—"}
               </strong>
-              <small>{formatBytes(storageSummary.largest_log_file?.size_bytes)}</small>
+
+              <small>
+                {formatBytes(storageSummary.largest_log_file?.size_bytes)}
+              </small>
             </div>
 
             <div className="agent-insight-card bright-card">
@@ -701,6 +821,7 @@ export default function AgentDetails() {
                 <span className="agent-insight-icon">
                   <i className="pi pi-chart-line" />
                 </span>
+
                 <div>
                   <h3>Trend samples</h3>
                   <p>Heartbeat points used for the chart</p>
@@ -710,6 +831,7 @@ export default function AgentDetails() {
               <strong className="agent-insight-value">
                 {details.trend_meta?.returned_count || sortedTrendLogs.length}
               </strong>
+
               <small>Loaded for graph analysis</small>
             </div>
           </section>
@@ -721,12 +843,17 @@ export default function AgentDetails() {
                   <i className="pi pi-chart-line" />
                   Server usage trends
                 </h2>
+
                 <p>
-                  CPU, memory and disk usage based on many heartbeat records, not only the table page.
+                  CPU, memory and disk usage based on many heartbeat records,
+                  not only the table page.
                 </p>
               </div>
 
-              <span>{details.trend_meta?.returned_count || sortedTrendLogs.length} trend samples</span>
+              <span>
+                {details.trend_meta?.returned_count || sortedTrendLogs.length}{" "}
+                trend samples
+              </span>
             </div>
 
             <div className="agent-trend-grid">
@@ -765,17 +892,25 @@ export default function AgentDetails() {
             <div>
               <article>
                 <span>Hostname</span>
-                <strong>{metrics.hostname || details.hostname || "Awaiting heartbeat"}</strong>
+                <strong>
+                  {metrics.hostname || details.hostname || "Awaiting heartbeat"}
+                </strong>
               </article>
 
               <article>
                 <span>IP Address</span>
-                <strong>{metrics.ip || details.last_ip || "Awaiting heartbeat"}</strong>
+                <strong>
+                  {metrics.ip || details.last_ip || "Awaiting heartbeat"}
+                </strong>
               </article>
 
               <article>
                 <span>Agent Version</span>
-                <strong>{metrics.agent_version || details.version || "Not reported yet"}</strong>
+                <strong>
+                  {metrics.agent_version ||
+                    details.version ||
+                    "Not reported yet"}
+                </strong>
               </article>
 
               <article>
@@ -803,7 +938,9 @@ export default function AgentDetails() {
 
               <article>
                 <span>Captured At</span>
-                <strong>{formatDate(metrics.created_at || details.last_seen_at)}</strong>
+                <strong>
+                  {formatDate(metrics.created_at || details.last_seen_at)}
+                </strong>
               </article>
             </div>
           </section>
@@ -815,7 +952,11 @@ export default function AgentDetails() {
                   <i className="pi pi-folder-open" />
                   Top directories by storage
                 </h2>
-                <p>Largest directories reported by the latest disk maintenance scan.</p>
+
+                <p>
+                  Largest directories reported by the latest disk maintenance
+                  scan.
+                </p>
               </div>
 
               <span>Total: {topDirectories.length}</span>
@@ -841,6 +982,7 @@ export default function AgentDetails() {
                   <i className="pi pi-file" />
                   Largest log files
                 </h2>
+
                 <p>Log files found during the latest disk maintenance scan.</p>
               </div>
 
@@ -858,7 +1000,11 @@ export default function AgentDetails() {
               emptyMessage="No log file data found."
               className="agent-heartbeat-datatable"
             >
-              <Column field="path" header="Log File" style={{ minWidth: "360px" }} />
+              <Column
+                field="path"
+                header="Log File"
+                style={{ minWidth: "360px" }}
+              />
               <Column header="Size" body={logFileSizeBody} />
               <Column header="Modified At" body={logModifiedBody} />
               <Column header="Candidate" body={candidateBody} />
@@ -873,7 +1019,10 @@ export default function AgentDetails() {
                   <i className="pi pi-history" />
                   Disk maintenance history
                 </h2>
-                <p>Recent disk maintenance reports received from the agent.</p>
+
+                <p>
+                  Recent disk maintenance reports received from the agent.
+                </p>
               </div>
 
               <span>Total loaded: {diskReports.length}</span>
@@ -913,10 +1062,13 @@ export default function AgentDetails() {
                   <i className="pi pi-list" />
                   Agent heartbeat logs
                 </h2>
+
                 <p>Paginated heartbeat entries captured for this agent.</p>
               </div>
 
-              <span>Total records: {details.pagination?.total || logs.length}</span>
+              <span>
+                Total records: {details.pagination?.total || logs.length}
+              </span>
             </div>
 
             <DataTable
@@ -929,7 +1081,9 @@ export default function AgentDetails() {
               onPage={(event) => {
                 const nextPage =
                   Math.floor((event.first || 0) / (event.rows || 10)) + 1;
+
                 const nextPageSize = event.rows || 10;
+
                 loadDetails(nextPage, nextPageSize);
               }}
               rowsPerPageOptions={[5, 10, 20, 50]}

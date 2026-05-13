@@ -26,6 +26,7 @@ import BackupPolicies from "./pages/BackupPolicies/BackupPolicies";
 import CreateBackupPolicy from "./pages/BackupPolicies/CreateBackupPolicy";
 import BackupPolicyDetails from "./pages/BackupPolicies/BackupPolicyDetails";
 import BackupLogs from "./pages/BackupPolicies/BackupLogs";
+import BackupCollections from "./pages/BackupPolicies/BackupCollections";
 // import AlertEmails from "./pages/AlertEmails";
 import { AppToastProvider } from "./components/ui/AppToast";
 import { useAppSelector } from "./store/hooks";
@@ -223,6 +224,12 @@ function App() {
           <Route path="/backup-logs" element={
             <AppLayout>
               <BackupLogs />
+            </AppLayout>
+          } />
+
+          <Route path="/backup-collections" element={
+            <AppLayout>
+              <BackupCollections />
             </AppLayout>
           } />
 
