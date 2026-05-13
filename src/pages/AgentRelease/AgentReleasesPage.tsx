@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
+import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Divider } from "primereact/divider";
+import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 import { Toast } from "primereact/toast";
 import { Toolbar } from "primereact/toolbar";
 import { Message } from "primereact/message";
-import './agent.css';
+
 import {
   AgentRelease,
   agentReleasesApi,
@@ -24,23 +26,77 @@ import "./agent.css";
 
 type FormState = {
   version: string;
-  title: string;
-  platform: string;
-  architecture: string;
+  os: string;
+  arch: string;
+  channel: string;
+  binary_path: string;
   download_url: string;
-  checksum: string;
-  notes: string;
+  sha256: string;
+  release_notes: string;
+  mandatory: boolean;
 };
 
 const emptyForm: FormState = {
   version: "",
-  title: "",
-  platform: "linux",
-  architecture: "amd64",
+  os: "linux",
+  arch: "amd64",
+  channel: "stable",
+  binary_path: "",
   download_url: "",
-  checksum: "",
-  notes: "",
+  sha256: "",
+  release_notes: "",
+  mandatory: false,
 };
+
+const osOptions = [
+  { label: "Linux", value: "linux" },
+  { label: "Windows", value: "windows" },
+  { label: "macOS / Darwin", value: "darwin" },
+];
+
+const archOptions = [
+  { label: "AMD64 / x86_64", value: "amd64" },
+  { label: "ARM64", value: "arm64" },
+  { label: "386 / x86", value: "386" },
+];
+
+const channelOptions = [
+  { label: "Stable", value: "stable" },
+  { label: "Beta", value: "beta" },
+  { label: "Dev", value: "dev" },
+];
+
+function normalizeText(value?: string) {
+  return String(value || "").trim();
+}
+
+function getReleaseOS(release: AgentRelease) {
+  return release.os || release.platform || "linux";
+}
+
+function getReleaseArch(release: AgentRelease) {
+  return release.arch || release.architecture || "amd64";
+}
+
+function getReleaseChannel(release: AgentRelease) {
+  return release.channel || "stable";
+}
+
+function getReleaseNotes(release: AgentRelease) {
+  return release.release_notes || release.notes || release.description || "";
+}
+
+function getReleaseChecksum(release: AgentRelease) {
+  return release.sha256 || release.checksum || "";
+}
+
+function getReleaseUrl(release: AgentRelease) {
+  return release.download_url || release.file_url || "";
+}
+
+function isReleaseActive(release: AgentRelease) {
+  return Boolean(release.is_active || release.active || release.status === "active");
+}
 
 export default function AgentReleasesPage() {
   const toast = useRef<Toast>(null);
@@ -59,6 +115,7 @@ export default function AgentReleasesPage() {
   );
 
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const fetchReleases = async () => {
     try {
@@ -86,10 +143,8 @@ export default function AgentReleasesPage() {
 
   const stats = useMemo(() => {
     const total = releases.length;
-    const active = releases.filter(
-      (release) => release.is_active || release.status === "active"
-    ).length;
-    const linux = releases.filter((release) => release.platform === "linux")
+    const active = releases.filter(isReleaseActive).length;
+    const linux = releases.filter((release) => getReleaseOS(release) === "linux")
       .length;
     const latest = releases[0]?.version || "—";
 
@@ -101,21 +156,50 @@ export default function AgentReleasesPage() {
     };
   }, [releases]);
 
-  const createRelease = async () => {
-    if (!form.version.trim()) {
-      toast.current?.show({
-        severity: "warn",
-        summary: "Version required",
-        detail: "Release version is required",
-      });
-      return;
+  const validateForm = () => {
+    const nextErrors: Record<string, string> = {};
+
+    if (!normalizeText(form.version)) {
+      nextErrors.version = "Version is required";
     }
 
-    if (!form.download_url.trim()) {
+    if (!normalizeText(form.os)) {
+      nextErrors.os = "OS is required";
+    }
+
+    if (!normalizeText(form.arch)) {
+      nextErrors.arch = "Architecture is required";
+    }
+
+    if (!normalizeText(form.channel)) {
+      nextErrors.channel = "Channel is required";
+    }
+
+    if (!normalizeText(form.download_url)) {
+      nextErrors.download_url = "Download URL is required";
+    }
+
+    if (!normalizeText(form.sha256)) {
+      nextErrors.sha256 = "SHA256 checksum is required";
+    }
+
+    setFormErrors(nextErrors);
+
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const resetCreateDialog = () => {
+    setForm(emptyForm);
+    setFormErrors({});
+    setCreateDialogVisible(false);
+  };
+
+  const createRelease = async () => {
+    if (!validateForm()) {
       toast.current?.show({
         severity: "warn",
-        summary: "Download URL required",
-        detail: "Release download URL is required",
+        summary: "Missing required fields",
+        detail: "Please fill all required release fields.",
       });
       return;
     }
@@ -124,15 +208,15 @@ export default function AgentReleasesPage() {
       setSaving(true);
 
       const payload: CreateAgentReleasePayload = {
-        version: form.version.trim(),
-        title: form.title.trim(),
-        platform: form.platform.trim(),
-        architecture: form.architecture.trim(),
-        download_url: form.download_url.trim(),
-        file_url: form.download_url.trim(),
-        checksum: form.checksum.trim(),
-        notes: form.notes.trim(),
-        description: form.notes.trim(),
+        version: normalizeText(form.version),
+        os: normalizeText(form.os).toLowerCase(),
+        arch: normalizeText(form.arch).toLowerCase(),
+        channel: normalizeText(form.channel).toLowerCase(),
+        binary_path: normalizeText(form.binary_path),
+        download_url: normalizeText(form.download_url),
+        sha256: normalizeText(form.sha256).toLowerCase(),
+        release_notes: normalizeText(form.release_notes),
+        mandatory: Boolean(form.mandatory),
       };
 
       const response = await agentReleasesApi.create(payload);
@@ -143,8 +227,7 @@ export default function AgentReleasesPage() {
         detail: response.message || "Agent release created successfully",
       });
 
-      setForm(emptyForm);
-      setCreateDialogVisible(false);
+      resetCreateDialog();
       await fetchReleases();
     } catch (error: any) {
       toast.current?.show({
@@ -170,7 +253,8 @@ export default function AgentReleasesPage() {
         severity: "success",
         summary: "Activated",
         detail:
-          response.message || `Release ${release.version} is now the active release`,
+          response.message ||
+          `Release ${release.version} is now the active release`,
       });
 
       await fetchReleases();
@@ -193,7 +277,7 @@ export default function AgentReleasesPage() {
       toast.current?.show({
         severity: "warn",
         summary: "Nothing to copy",
-        detail: "No URL available for this release",
+        detail: "No value available for this release",
       });
       return;
     }
@@ -221,7 +305,7 @@ export default function AgentReleasesPage() {
   };
 
   const statusSeverity = (release: AgentRelease) => {
-    if (release.is_active || release.status === "active") return "success";
+    if (isReleaseActive(release)) return "success";
     if (release.status === "draft") return "warning";
     return "secondary";
   };
@@ -246,7 +330,7 @@ export default function AgentReleasesPage() {
         <div>
           <div className="release-version">{release.version}</div>
           <div className="release-title">
-            {release.title || release.notes || "Agent release package"}
+            {getReleaseNotes(release) || "Agent release package"}
           </div>
         </div>
       </div>
@@ -258,23 +342,28 @@ export default function AgentReleasesPage() {
       <div className="release-platforms">
         <span className="release-platform-badge">
           <i className="pi pi-desktop" />
-          {release.platform || "linux"}
+          {getReleaseOS(release)}
         </span>
 
         <span className="release-arch-badge">
           <i className="pi pi-microchip" />
-          {release.architecture || "amd64"}
+          {getReleaseArch(release)}
+        </span>
+
+        <span className="release-arch-badge">
+          <i className="pi pi-send" />
+          {getReleaseChannel(release)}
         </span>
       </div>
     );
   };
 
   const statusTemplate = (release: AgentRelease) => {
-    const isActive = release.is_active || release.status === "active";
+    const active = isReleaseActive(release);
 
     return (
       <Tag
-        value={isActive ? "active" : release.status || "inactive"}
+        value={active ? "active" : release.status || "inactive"}
         severity={statusSeverity(release)}
         rounded
         className="release-status-tag"
@@ -283,7 +372,7 @@ export default function AgentReleasesPage() {
   };
 
   const urlTemplate = (release: AgentRelease) => {
-    const url = release.download_url || release.file_url;
+    const url = getReleaseUrl(release);
 
     return url ? (
       <Button
@@ -305,7 +394,7 @@ export default function AgentReleasesPage() {
         release={release}
         onView={openDetails}
         onActivate={activateRelease}
-        onCopyUrl={(item) => copyText(item.download_url || item.file_url)}
+        onCopyUrl={(item) => copyText(getReleaseUrl(item))}
       />
     );
   };
@@ -321,6 +410,7 @@ export default function AgentReleasesPage() {
     <div className="releases-toolbar-actions">
       <span className="p-input-icon-left releases-search">
         <i className="pi pi-search" />
+
         <InputText
           value={globalFilter}
           onChange={(event) => setGlobalFilter(event.target.value)}
@@ -351,7 +441,9 @@ export default function AgentReleasesPage() {
       <div className="releases-header">
         <div>
           <span className="releases-kicker">Agent Updater</span>
+
           <h1>Agent Releases</h1>
+
           <p>
             Publish new OpsRadar agent versions and choose the active release
             that remote agents should upgrade to.
@@ -447,114 +539,182 @@ export default function AgentReleasesPage() {
       <Dialog
         header="Create Agent Release"
         visible={createDialogVisible}
-        onHide={() => {
-          setCreateDialogVisible(false);
-          setForm(emptyForm);
-        }}
+        onHide={resetCreateDialog}
         className="release-dialog"
         modal
       >
         <div className="release-form">
           <Message
             severity="info"
-            text="Create a release using the version, download URL, and checksum generated from your agent build process."
+            text="Create a release using the exact fields required by the backend: version, OS, architecture, channel, download URL and SHA256 checksum."
             className="release-info-message"
           />
 
           <div className="release-form-grid">
             <div className="release-form-group">
-              <label>Version</label>
+              <label>
+                Version <span className="required">*</span>
+              </label>
+
               <InputText
                 value={form.version}
+                className={formErrors.version ? "p-invalid" : ""}
                 onChange={(event) =>
                   setForm((prev) => ({
                     ...prev,
                     version: event.target.value,
                   }))
                 }
-                placeholder="Example: v1.0.3"
+                placeholder="Example: 1.1.7"
               />
+
+              {formErrors.version && (
+                <small className="input-error">{formErrors.version}</small>
+              )}
             </div>
 
             <div className="release-form-group">
-              <label>Title</label>
-              <InputText
-                value={form.title}
+              <label>
+                Operating System <span className="required">*</span>
+              </label>
+
+              <Dropdown
+                value={form.os}
+                options={osOptions}
+                className={formErrors.os ? "p-invalid w-full" : "w-full"}
                 onChange={(event) =>
                   setForm((prev) => ({
                     ...prev,
-                    title: event.target.value,
+                    os: event.value,
                   }))
                 }
-                placeholder="Example: Stable Linux Agent"
+                placeholder="Select OS"
               />
+
+              {formErrors.os && (
+                <small className="input-error">{formErrors.os}</small>
+              )}
             </div>
 
             <div className="release-form-group">
-              <label>Platform</label>
-              <InputText
-                value={form.platform}
+              <label>
+                Architecture <span className="required">*</span>
+              </label>
+
+              <Dropdown
+                value={form.arch}
+                options={archOptions}
+                className={formErrors.arch ? "p-invalid w-full" : "w-full"}
                 onChange={(event) =>
                   setForm((prev) => ({
                     ...prev,
-                    platform: event.target.value,
+                    arch: event.value,
                   }))
                 }
-                placeholder="linux"
+                placeholder="Select architecture"
               />
+
+              {formErrors.arch && (
+                <small className="input-error">{formErrors.arch}</small>
+              )}
             </div>
 
             <div className="release-form-group">
-              <label>Architecture</label>
-              <InputText
-                value={form.architecture}
+              <label>
+                Channel <span className="required">*</span>
+              </label>
+
+              <Dropdown
+                value={form.channel}
+                options={channelOptions}
+                className={formErrors.channel ? "p-invalid w-full" : "w-full"}
                 onChange={(event) =>
                   setForm((prev) => ({
                     ...prev,
-                    architecture: event.target.value,
+                    channel: event.value,
                   }))
                 }
-                placeholder="amd64"
+                placeholder="Select channel"
               />
+
+              {formErrors.channel && (
+                <small className="input-error">{formErrors.channel}</small>
+              )}
             </div>
           </div>
 
           <div className="release-form-group">
-            <label>Download URL</label>
+            <label>Binary Path</label>
+
+            <InputText
+              value={form.binary_path}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  binary_path: event.target.value,
+                }))
+              }
+              placeholder="/var/www/opsradar/releases/opsradar-agent-linux-amd64"
+            />
+
+            <small className="release-form-hint">
+              Optional backend/internal path where the binary is stored.
+            </small>
+          </div>
+
+          <div className="release-form-group">
+            <label>
+              Download URL <span className="required">*</span>
+            </label>
+
             <InputText
               value={form.download_url}
+              className={formErrors.download_url ? "p-invalid" : ""}
               onChange={(event) =>
                 setForm((prev) => ({
                   ...prev,
                   download_url: event.target.value,
                 }))
               }
-              placeholder="https://your-domain.com/releases/opsradar-agent-v1.0.3-linux-amd64"
+              placeholder="https://api-opsradar.tekvancesolutions.co.ke/opsradar-agent-linux-amd64"
             />
+
+            {formErrors.download_url && (
+              <small className="input-error">{formErrors.download_url}</small>
+            )}
           </div>
 
           <div className="release-form-group">
-            <label>Checksum</label>
+            <label>
+              SHA256 Checksum <span className="required">*</span>
+            </label>
+
             <InputText
-              value={form.checksum}
+              value={form.sha256}
+              className={formErrors.sha256 ? "p-invalid" : ""}
               onChange={(event) =>
                 setForm((prev) => ({
                   ...prev,
-                  checksum: event.target.value,
+                  sha256: event.target.value,
                 }))
               }
-              placeholder="sha256 checksum"
+              placeholder="Example: 3f786850e387550fdab836ed7e6dc881de23001b..."
             />
+
+            {formErrors.sha256 && (
+              <small className="input-error">{formErrors.sha256}</small>
+            )}
           </div>
 
           <div className="release-form-group">
             <label>Release Notes</label>
+
             <InputTextarea
-              value={form.notes}
+              value={form.release_notes}
               onChange={(event) =>
                 setForm((prev) => ({
                   ...prev,
-                  notes: event.target.value,
+                  release_notes: event.target.value,
                 }))
               }
               rows={5}
@@ -563,15 +723,26 @@ export default function AgentReleasesPage() {
             />
           </div>
 
+          <label className="release-checkbox-row">
+            <Checkbox
+              checked={form.mandatory}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  mandatory: Boolean(event.checked),
+                }))
+              }
+            />
+
+            <span>Mandatory release</span>
+          </label>
+
           <div className="release-dialog-footer">
             <Button
               label="Cancel"
               icon="pi pi-times"
               outlined
-              onClick={() => {
-                setCreateDialogVisible(false);
-                setForm(emptyForm);
-              }}
+              onClick={resetCreateDialog}
             />
 
             <Button
@@ -600,15 +771,11 @@ export default function AgentReleasesPage() {
 
               <div>
                 <h3>{selectedRelease.version}</h3>
-                <p>{selectedRelease.title || "Agent release package"}</p>
+
+                <p>{getReleaseNotes(selectedRelease) || "Agent release package"}</p>
 
                 <Tag
-                  value={
-                    selectedRelease.is_active ||
-                    selectedRelease.status === "active"
-                      ? "active"
-                      : selectedRelease.status || "inactive"
-                  }
+                  value={isReleaseActive(selectedRelease) ? "active" : "inactive"}
                   severity={statusSeverity(selectedRelease)}
                   rounded
                 />
@@ -629,13 +796,23 @@ export default function AgentReleasesPage() {
               </div>
 
               <div>
-                <span>Platform</span>
-                <strong>{selectedRelease.platform || "linux"}</strong>
+                <span>OS</span>
+                <strong>{getReleaseOS(selectedRelease)}</strong>
               </div>
 
               <div>
                 <span>Architecture</span>
-                <strong>{selectedRelease.architecture || "amd64"}</strong>
+                <strong>{getReleaseArch(selectedRelease)}</strong>
+              </div>
+
+              <div>
+                <span>Channel</span>
+                <strong>{getReleaseChannel(selectedRelease)}</strong>
+              </div>
+
+              <div>
+                <span>Mandatory</span>
+                <strong>{selectedRelease.mandatory ? "Yes" : "No"}</strong>
               </div>
 
               <div>
@@ -644,10 +821,30 @@ export default function AgentReleasesPage() {
               </div>
 
               <div>
-                <span>Activated At</span>
-                <strong>{formatDate(selectedRelease.activated_at)}</strong>
+                <span>Updated At</span>
+                <strong>{formatDate(selectedRelease.updated_at)}</strong>
               </div>
             </div>
+
+            {selectedRelease.binary_path && (
+              <div className="release-url-box">
+                <div className="release-url-header">
+                  <div>
+                    <strong>Binary Path</strong>
+                    <small>Internal/backend location of the release binary.</small>
+                  </div>
+
+                  <Button
+                    label="Copy"
+                    icon="pi pi-copy"
+                    size="small"
+                    onClick={() => copyText(selectedRelease.binary_path)}
+                  />
+                </div>
+
+                <pre>{selectedRelease.binary_path}</pre>
+              </div>
+            )}
 
             <div className="release-url-box">
               <div className="release-url-header">
@@ -660,22 +857,18 @@ export default function AgentReleasesPage() {
                   label="Copy"
                   icon="pi pi-copy"
                   size="small"
-                  onClick={() =>
-                    copyText(
-                      selectedRelease.download_url || selectedRelease.file_url
-                    )
-                  }
+                  onClick={() => copyText(getReleaseUrl(selectedRelease))}
                 />
               </div>
 
-              <pre>{selectedRelease.download_url || selectedRelease.file_url || "—"}</pre>
+              <pre>{getReleaseUrl(selectedRelease) || "—"}</pre>
             </div>
 
-            {selectedRelease.checksum && (
+            {getReleaseChecksum(selectedRelease) && (
               <div className="release-url-box">
                 <div className="release-url-header">
                   <div>
-                    <strong>Checksum</strong>
+                    <strong>SHA256 Checksum</strong>
                     <small>Used to verify the downloaded release.</small>
                   </div>
 
@@ -683,32 +876,31 @@ export default function AgentReleasesPage() {
                     label="Copy"
                     icon="pi pi-copy"
                     size="small"
-                    onClick={() => copyText(selectedRelease.checksum)}
+                    onClick={() => copyText(getReleaseChecksum(selectedRelease))}
                   />
                 </div>
 
-                <pre>{selectedRelease.checksum}</pre>
+                <pre>{getReleaseChecksum(selectedRelease)}</pre>
               </div>
             )}
 
-            {(selectedRelease.notes || selectedRelease.description) && (
+            {getReleaseNotes(selectedRelease) && (
               <div className="release-notes-box">
                 <strong>Release Notes</strong>
-                <p>{selectedRelease.notes || selectedRelease.description}</p>
+                <p>{getReleaseNotes(selectedRelease)}</p>
               </div>
             )}
 
-            {!selectedRelease.is_active &&
-              selectedRelease.status !== "active" && (
-                <div className="release-details-footer">
-                  <Button
-                    label="Set as Active Release"
-                    icon="pi pi-bolt"
-                    onClick={() => activateRelease(selectedRelease)}
-                    loading={saving}
-                  />
-                </div>
-              )}
+            {!isReleaseActive(selectedRelease) && (
+              <div className="release-details-footer">
+                <Button
+                  label="Set as Active Release"
+                  icon="pi pi-bolt"
+                  onClick={() => activateRelease(selectedRelease)}
+                  loading={saving}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <p>No release selected</p>
