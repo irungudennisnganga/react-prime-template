@@ -1,6 +1,6 @@
 import { apiClient } from "./http";
 
-export type AgentServiceType = "mongodb" | "redis" | "rabbitmq" | string;
+export type AgentServiceType = "mongodb" | "redis" | "rabbitmq" | "postgresql" | "mysql" | string;
 
 export type AgentServiceState = "up" | "down" | "unknown" | "pending" | string;
 
@@ -16,6 +16,7 @@ export type AgentServicePayload = {
   username?: string;
   password?: string;
   database_name?: string;
+  auth_database?: string;
   rabbitmq_vhost?: string;
   check_interval_sec: number;
   enabled: boolean;
@@ -56,6 +57,9 @@ export type AgentService = {
 
   database_name?: string;
   DatabaseName?: string;
+
+  auth_database?: string;
+  AuthDatabase?: string;
 
   rabbitmq_vhost?: string;
   RabbitMQVHost?: string;
@@ -205,6 +209,8 @@ export function normalizeAgentService(raw: any): AgentService {
 
     database_name: raw.database_name || raw.DatabaseName || "",
 
+    auth_database: raw.auth_database || raw.AuthDatabase || "",
+
     rabbitmq_vhost: raw.rabbitmq_vhost || raw.RabbitMQVHost || "",
 
     check_interval_sec: Number(
@@ -284,7 +290,11 @@ function buildCreatePayload(payload: AgentServicePayload) {
 
     username: payload.username || "",
     password: payload.password || "",
-    database_name: type === "mongodb" ? payload.database_name || "admin" : "",
+    database_name:
+      type === "mongodb" || type === "postgresql" || type === "mysql"
+        ? payload.database_name || ""
+        : "",
+    auth_database: type === "mongodb" ? payload.auth_database || "" : "",
     rabbitmq_vhost: type === "rabbitmq" ? payload.rabbitmq_vhost || "/" : "",
 
     auto_restart: Boolean(payload.auto_restart),

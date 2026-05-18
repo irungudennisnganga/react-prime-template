@@ -145,7 +145,7 @@ export default function AddServiceModal({
               ? prev.database_name || ""
               : "",
 
-      auth_database: type === "mongodb" ? prev.auth_database || "admin" : "",
+      auth_database: type === "mongodb" ? prev.auth_database || "" : "",
 
       rabbitmq_vhost: type === "rabbitmq" ? prev.rabbitmq_vhost || "/" : "",
     }));
@@ -184,15 +184,6 @@ export default function AddServiceModal({
 
     if ((form.password || "").trim() && !(form.username || "").trim()) {
       nextErrors.username = "Username is required when password is provided";
-    }
-
-    if (
-      form.service_type === "mongodb" &&
-      ((form.username || "").trim() || (form.password || "").trim()) &&
-      !form.auth_database?.trim()
-    ) {
-      nextErrors.auth_database =
-        "Auth database is required when MongoDB credentials are provided";
     }
 
     if (form.service_type === "rabbitmq" && !form.rabbitmq_vhost?.trim()) {
@@ -243,10 +234,7 @@ export default function AddServiceModal({
               : "",
 
       auth_database:
-        serviceType === "mongodb" &&
-        ((form.username || "").trim() || (form.password || "").trim())
-          ? form.auth_database?.trim() || "admin"
-          : "",
+        serviceType === "mongodb" ? form.auth_database?.trim() || "" : "",
 
       rabbitmq_vhost:
         serviceType === "rabbitmq" ? form.rabbitmq_vhost?.trim() || "/" : "",
@@ -279,7 +267,7 @@ export default function AddServiceModal({
       <form className="service-form" onSubmit={submit}>
         <p className="service-dialog-subtitle">
           Create a monitored service for an agent. For MongoDB, leave the
-          database name empty to back up all databases on that server.
+          database name empty to back up all databases on that server. Leave auth database empty when MongoDB does not require it.
         </p>
 
         <div className="service-form-grid">
@@ -439,8 +427,8 @@ export default function AddServiceModal({
                 name="auth_database"
                 type="text"
                 icon="pi pi-shield"
-                value={form.auth_database || "admin"}
-                placeholder="admin"
+                value={form.auth_database || ""}
+                placeholder="Optional auth database, e.g. admin"
                 error={errors.auth_database}
                 onChange={(value) =>
                   setForm((prev) => ({
